@@ -12,6 +12,14 @@ authors = [{name="Nick Hallmark", email="NHALLMARK3@BLOOMBERG.NET"}]
 
 
 dependencies = [
+    'pydantic>=2',
+    'pandas>=2',
+    'langchain>=0.1.0',
+    'openai>=1.0',
+    'requests>=2',
+    'loguru>=0.7',
+    'jinja2>=3.1',
+    'faiss-cpu>=1.7',
 ]
 
 [project.optional-dependencies]
