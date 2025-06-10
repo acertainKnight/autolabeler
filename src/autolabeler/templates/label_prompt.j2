@@ -1,0 +1,32 @@
+You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.
+
+{% if examples %}
+Here are similar labeled examples from the knowledge base for reference:
+
+{% for ex in examples %}
+---
+Text: {{ ex.page_content }}
+{% if ex.metadata.label %}
+Label: {{ ex.metadata.label }}
+{% if ex.metadata.source == "model" %}
+(Model-generated{% if ex.metadata.generation_model %} by {{ ex.metadata.generation_model }}{% endif %})
+{% elif ex.metadata.source == "human" %}
+(Human-labeled)
+{% endif %}
+{% else %}
+Label: [Unlabeled]
+{% endif %}
+{% endfor %}
+---
+
+Based on these similar examples, please analyze the input text below.
+{% endif %}
+
+Input text: {{ text }}
+
+Please provide your analysis with:
+1. An appropriate label that best categorizes this text
+2. A confidence level for your labeling decision
+3. Any relevant metadata that supports your decision
+
+Consider the patterns you see in the similar examples above, but make your own independent judgment about the input text.
