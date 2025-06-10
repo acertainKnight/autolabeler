@@ -1,0 +1,82 @@
+You are an expert political and media analyst. Your task is to analyze news headlines and extract multiple pieces of information with high accuracy.
+
+## Target Question/Guidelines
+{{ target_question }}
+
+{% if context_metadata and context_metadata.past_headlines %}
+## Context: Past Headlines from Same Speech/Event
+{% for headline in context_metadata.past_headlines %}
+- {{ headline }}
+{% endfor %}
+
+Use this context to better understand the speaker patterns, topics, and overall tone of the speech/event.
+{% endif %}
+
+{% if examples %}
+## Similar Labeled Examples for Reference
+
+### Relevance Examples:
+{% for ex in examples %}
+{% if ex.metadata.label_type == "relevance" or not ex.metadata.label_type %}
+---
+**Example {{ loop.index }}:**
+Headline: {{ ex.page_content }}
+Relevance: {{ ex.metadata.label }}
+{% if ex.metadata.reasoning %}
+Reasoning: {{ ex.metadata.reasoning }}
+{% endif %}
+{% endif %}
+{% endfor %}
+
+### Sentiment Examples:
+{% for ex in examples %}
+{% if ex.metadata.label_type == "sentiment" or not ex.metadata.label_type %}
+---
+**Example {{ loop.index }}:**
+Headline: {{ ex.page_content }}
+Sentiment: {{ ex.metadata.label }}
+{% if ex.metadata.reasoning %}
+Reasoning: {{ ex.metadata.reasoning }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## Task: Analyze This Headline
+**Headline to analyze:** {{ text }}
+
+Please extract the following information:
+
+### 1. Speaker Identification
+- **Task**: Identify who is speaking or being quoted in this headline
+- **Options**: Look for explicit mentions, quoted sources, or implied speakers
+- **Consider**: Context from past headlines to identify consistent speakers
+
+### 2. Relevance Assessment
+- **Task**: Rate how relevant this headline is to the target question/guidelines
+- **Scale**: Use categories like "highly_relevant", "moderately_relevant", "slightly_relevant", "not_relevant"
+- **Consider**: Direct connections, indirect implications, and thematic relevance
+
+### 3. Sentiment Analysis
+- **Task**: Determine the sentiment of the headline regarding the target question/guidelines
+- **Scale**: Use categories like "positive", "negative", "neutral", "mixed"
+- **Consider**: Tone, word choice, implications, and context from the speech
+
+## Response Requirements
+Provide your analysis with:
+
+1. **Speaker**: The identified speaker (person, organization, or "unknown" if unclear)
+2. **Speaker Confidence**: Confidence level (0.0-1.0) for speaker identification
+3. **Relevance**: Relevance category based on connection to target question
+4. **Relevance Confidence**: Confidence level (0.0-1.0) for relevance assessment
+5. **Sentiment**: Sentiment category regarding the target question/guidelines
+6. **Sentiment Confidence**: Confidence level (0.0-1.0) for sentiment classification
+7. **Overall Confidence**: Overall confidence (0.0-1.0) for the complete extraction
+8. **Reasoning**: Brief explanation of your extraction decisions
+9. **Context Influence**: How past headlines influenced your analysis (if applicable)
+
+{% if examples %}
+Base your analysis on patterns from the similar examples above, but make independent judgments for this specific headline.
+{% endif %}
+
+Focus on accuracy and provide realistic confidence scores that reflect your certainty in each extraction.

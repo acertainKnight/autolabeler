@@ -119,7 +119,8 @@ class AutoLabeler:
         text: str,
         use_rag: bool = True,
         k: int | None = None,
-        prefer_human_examples: bool = True
+        prefer_human_examples: bool = True,
+        context_metadata: dict[str, Any] | None = None
     ) -> LabelResponse:
         """
         Label a single text using the configured LLM with optional RAG examples.
@@ -129,40 +130,70 @@ class AutoLabeler:
             use_rag (bool): Whether to use RAG examples from knowledge base.
             k (int | None): Number of examples to retrieve. Uses settings default if None.
             prefer_human_examples (bool): Prefer human-labeled examples over model-generated.
+            context_metadata (dict[str, Any] | None): Additional context for retrieval filtering/boosting.
 
         Returns:
             LabelResponse: Structured response with label, confidence, and metadata.
 
         Example:
-            >>> result = labeler.label_text("This product is amazing!")
+            >>> context = {"domain": "product_reviews", "category": "electronics"}
+            >>> result = labeler.label_text("This product is amazing!", context_metadata=context)
             >>> print(f"Label: {result.label}, Confidence: {result.confidence}")
         """
         examples = []
         if use_rag:
             if prefer_human_examples:
-                # Try to get human examples first
-                examples = self.knowledge_base.get_similar_examples(
-                    text, k=k, filter_source="human"
-                )
+                # Try to get human examples first with context-aware retrieval
+                if context_metadata and hasattr(self.knowledge_base, 'get_similar_examples_with_metadata_filter'):
+                    examples = self.knowledge_base.get_similar_examples_with_metadata_filter(
+                        text,
+                        k=k,
+                        filter_source="human",
+                        metadata_filters={f"data_{key}": value for key, value in context_metadata.items() if key not in ['boost', 'priority']},
+                        boost_metadata=context_metadata.get('boost', {})
+                    )
+                else:
+                    examples = self.knowledge_base.get_similar_examples(
+                        text, k=k, filter_source="human"
+                    )
+
                 # If not enough human examples, supplement with model examples
                 if len(examples) < (k or self.settings.max_examples_per_query):
                     remaining = (k or self.settings.max_examples_per_query) - len(examples)
-                    model_examples = self.knowledge_base.get_similar_examples(
-                        text, k=remaining, filter_source="model"
-                    )
+                    if context_metadata and hasattr(self.knowledge_base, 'get_similar_examples_with_metadata_filter'):
+                        model_examples = self.knowledge_base.get_similar_examples_with_metadata_filter(
+                            text,
+                            k=remaining,
+                            filter_source="model",
+                            metadata_filters={f"data_{key}": value for key, value in context_metadata.items() if key not in ['boost', 'priority']},
+                            boost_metadata=context_metadata.get('boost', {})
+                        )
+                    else:
+                        model_examples = self.knowledge_base.get_similar_examples(
+                            text, k=remaining, filter_source="model"
+                        )
                     examples.extend(model_examples)
             else:
-                # Get any examples regardless of source
-                examples = self.knowledge_base.get_similar_examples(text, k=k)
+                # Get any examples regardless of source with context-aware retrieval
+                if context_metadata and hasattr(self.knowledge_base, 'get_similar_examples_with_metadata_filter'):
+                    examples = self.knowledge_base.get_similar_examples_with_metadata_filter(
+                        text,
+                        k=k,
+                        metadata_filters={f"data_{key}": value for key, value in context_metadata.items() if key not in ['boost', 'priority']},
+                        boost_metadata=context_metadata.get('boost', {})
+                    )
+                else:
+                    examples = self.knowledge_base.get_similar_examples(text, k=k)
 
         rendered_prompt = self.template.render(
             text=text,
             examples=examples,
+            context_metadata=context_metadata,
         )
 
         # Store the prompt for tracking
         template_source = getattr(self.template, 'name', None) or "label_prompt.j2"
-        variables = {"text": text}
+        variables = {"text": text, "context_metadata": context_metadata}
         examples_data = []
 
         if examples:
@@ -170,7 +201,8 @@ class AutoLabeler:
                 {
                     "text": ex.page_content,
                     "source": ex.metadata.get("source", "unknown"),
-                    "label": ex.metadata.get("label")
+                    "label": ex.metadata.get("label"),
+                    "metadata": {k: v for k, v in ex.metadata.items() if k not in ["text", "source", "label"]}
                 }
                 for ex in examples
             ]
@@ -182,7 +214,7 @@ class AutoLabeler:
             model_config_id=getattr(self, 'current_model_config_id', None),
             model_name=self.model_info.get("model"),
             examples_used=examples_data,
-            tags=["single_text"]
+            tags=["single_text"] + (["context_aware"] if context_metadata else [])
         )
 
         try:
@@ -198,14 +230,53 @@ class AutoLabeler:
             logger.debug(f"Labeled text with confidence {result.confidence}: {result.label} (prompt: {prompt_id})")
             return result
         except Exception as e:
-            # Update prompt result statistics for failure
+            # Update prompt result with error
             self.prompt_store.update_prompt_result(
                 prompt_id=prompt_id,
-                successful=False
+                successful=False,
+                error_message=str(e)
             )
-
-            logger.error(f"Failed to label text: {e} (prompt: {prompt_id})")
+            logger.error(f"Error labeling text (prompt: {prompt_id}): {e}")
             raise
+
+    def label_text_with_context(
+        self,
+        text: str,
+        context: dict[str, Any],
+        use_rag: bool = True,
+        k: int | None = None,
+        prefer_human_examples: bool = True
+    ) -> LabelResponse:
+        """
+        Label text with rich contextual information for improved accuracy.
+
+        Args:
+            text (str): Text to label.
+            context (dict[str, Any]): Rich context including domain, category, metadata filters, etc.
+            use_rag (bool): Whether to use RAG examples from knowledge base.
+            k (int | None): Number of examples to retrieve.
+            prefer_human_examples (bool): Prefer human-labeled examples over model-generated.
+
+        Returns:
+            LabelResponse: Structured response with label, confidence, and metadata.
+
+        Example:
+            >>> context = {
+            ...     "domain": "e-commerce",
+            ...     "category": "electronics",
+            ...     "user_intent": "purchase_decision",
+            ...     "boost": {"data_quality_score": 1.5, "data_recency": 1.2},
+            ...     "background": "Customer reviewing a smartphone after 30 days of use"
+            ... }
+            >>> result = labeler.label_text_with_context("Amazing battery life!", context)
+        """
+        return self.label_text(
+            text=text,
+            use_rag=use_rag,
+            k=k,
+            prefer_human_examples=prefer_human_examples,
+            context_metadata=context
+        )
 
     def label_dataframe(
         self,

@@ -94,19 +94,22 @@ class KnowledgeBase:
         df: pd.DataFrame,
         text_column: str,
         label_column: str,
-        source: str = "human"
+        source: str = "human",
+        additional_metadata: dict[str, Any] | None = None
     ) -> None:
         """
-        Add labeled data to the knowledge base.
+        Add labeled data to the knowledge base with enhanced metadata support.
 
         Args:
             df (pd.DataFrame): DataFrame containing text and labels.
             text_column (str): Name of column containing text.
             label_column (str): Name of column containing labels.
             source (str): Source of labels ("human" or "model").
+            additional_metadata (dict[str, Any] | None): Additional metadata to attach to all examples.
 
         Example:
-            >>> kb.add_labeled_data(labeled_df, "review", "sentiment")
+            >>> metadata = {"domain": "product_reviews", "quality_score": 0.95}
+            >>> kb.add_labeled_data(labeled_df, "review", "sentiment", additional_metadata=metadata)
         """
         # Filter only labeled rows
         labeled_df = df[df[label_column].notna()].copy()
@@ -124,15 +127,40 @@ class KnowledgeBase:
                 "source": source,
                 "added_at": datetime.now().isoformat(),
                 "dataset": self.dataset_name,
+                "text_length": len(str(row[text_column])),
+                "word_count": len(str(row[text_column]).split()),
             }
-            # Add any additional metadata from the row
+
+            # Add any additional metadata columns from the DataFrame
             for col in df.columns:
                 if col not in [text_column, label_column]:
-                    metadata[f"data_{col}"] = row[col]
+                    value = row[col]
+                    if pd.notna(value):  # Only add non-null metadata
+                        metadata[f"data_{col}"] = value
+
+            # Add user-provided additional metadata
+            if additional_metadata:
+                for key, value in additional_metadata.items():
+                    metadata[f"custom_{key}"] = value
+
+            # Enhanced text for embedding: include context information
+            enhanced_text = str(row[text_column])
+
+            # Add contextual information to the embedding text if available
+            context_fields = []
+            if "category" in row and pd.notna(row["category"]):
+                context_fields.append(f"Category: {row['category']}")
+            if "domain" in row and pd.notna(row["domain"]):
+                context_fields.append(f"Domain: {row['domain']}")
+            if "topic" in row and pd.notna(row["topic"]):
+                context_fields.append(f"Topic: {row['topic']}")
+
+            if context_fields:
+                enhanced_text = f"{' | '.join(context_fields)} | Text: {enhanced_text}"
 
             documents.append(
                 Document(
-                    page_content=str(row[text_column]),
+                    page_content=enhanced_text,
                     metadata=metadata
                 )
             )
@@ -159,7 +187,7 @@ class KnowledgeBase:
 
         logger.info(
             f"Added {len(documents)} {source} examples to {self.dataset_name} "
-            f"knowledge base"
+            f"knowledge base with enhanced metadata"
         )
 
     def add_model_labels(
@@ -440,3 +468,242 @@ class KnowledgeBase:
         except Exception as e:
             logger.error(f"Failed to export synthetic data: {e}")
             raise
+
+    def get_similar_examples_with_metadata_filter(
+        self,
+        query_text: str,
+        k: int | None = None,
+        filter_source: str | None = None,
+        metadata_filters: dict[str, Any] | None = None,
+        boost_metadata: dict[str, float] | None = None
+    ) -> list[Document]:
+        """
+        Retrieve similar examples with advanced metadata filtering and boosting.
+
+        Args:
+            query_text (str): Text to find similar examples for.
+            k (int | None): Number of examples to retrieve.
+            filter_source (str | None): Filter by source ("human" or "model").
+            metadata_filters (dict[str, Any] | None): Exact metadata matches required.
+            boost_metadata (dict[str, float] | None): Metadata fields to boost similarity by multiplier.
+
+        Returns:
+            list[Document]: Similar examples with metadata-aware scoring.
+
+        Example:
+            >>> # Find examples from same domain with quality boost
+            >>> filters = {"data_category": "electronics"}
+            >>> boost = {"data_quality_score": 1.2}
+            >>> examples = kb.get_similar_examples_with_metadata_filter(
+            ...     "Great product!", metadata_filters=filters, boost_metadata=boost
+            ... )
+        """
+        if self.vector_store is None:
+            return []
+
+        k = k or self.settings.max_examples_per_query
+        search_k = k * 5  # Get more examples for better filtering
+
+        # Enhanced query text with context if available
+        enhanced_query = query_text
+        if boost_metadata:
+            context_parts = []
+            for field, weight in boost_metadata.items():
+                if weight > 1.0:  # Only boost positive weights
+                    field_clean = field.replace("data_", "").replace("custom_", "")
+                    context_parts.append(f"{field_clean.title()}")
+
+            if context_parts:
+                enhanced_query = f"{' '.join(context_parts)} | Text: {query_text}"
+
+        similar_docs = self.vector_store.similarity_search_with_score(
+            enhanced_query, k=search_k
+        )
+
+        # Filter by similarity threshold
+        filtered_docs = [
+            (doc, score) for doc, score in similar_docs
+            if score <= (1 - self.settings.similarity_threshold)
+        ]
+
+        # Apply metadata filters
+        if metadata_filters:
+            filtered_docs = [
+                (doc, score) for doc, score in filtered_docs
+                if all(
+                    doc.metadata.get(key) == value
+                    for key, value in metadata_filters.items()
+                )
+            ]
+
+        # Filter by source if specified
+        if filter_source:
+            filtered_docs = [
+                (doc, score) for doc, score in filtered_docs
+                if doc.metadata.get("source") == filter_source
+            ]
+
+        # Apply metadata boosting to scores
+        if boost_metadata:
+            boosted_docs = []
+            for doc, score in filtered_docs:
+                boost_factor = 1.0
+                for field, multiplier in boost_metadata.items():
+                    if field in doc.metadata:
+                        # Boost based on metadata presence and value
+                        if isinstance(doc.metadata[field], (int, float)):
+                            # Numerical boosting
+                            boost_factor *= (multiplier * float(doc.metadata[field]))
+                        else:
+                            # Categorical boosting
+                            boost_factor *= multiplier
+
+                # Apply boost to similarity (lower score is better for FAISS)
+                boosted_score = score / boost_factor if boost_factor > 0 else score
+                boosted_docs.append((doc, boosted_score))
+
+            # Re-sort by boosted scores
+            filtered_docs = sorted(boosted_docs, key=lambda x: x[1])
+
+        # Return top k documents
+        return [doc for doc, score in filtered_docs[:k]]
+
+    def create_contextual_embedding(
+        self,
+        text: str,
+        context: dict[str, Any] | None = None
+    ) -> list[float]:
+        """
+        Create contextual embeddings by augmenting text with relevant metadata.
+
+        Args:
+            text (str): Original text to embed.
+            context (dict[str, Any] | None): Context metadata to include in embedding.
+
+        Returns:
+            list[float]: Contextual embedding vector.
+
+        Example:
+            >>> context = {"domain": "healthcare", "category": "diagnosis"}
+            >>> embedding = kb.create_contextual_embedding("Patient feels dizzy", context)
+        """
+        # Base text
+        enhanced_text = text
+
+        if context:
+            # Add context information to influence the embedding
+            context_parts = []
+
+            # Domain context
+            if "domain" in context:
+                context_parts.append(f"Domain: {context['domain']}")
+
+            # Category context
+            if "category" in context:
+                context_parts.append(f"Category: {context['category']}")
+
+            # Intent context
+            if "intent" in context or "user_intent" in context:
+                intent = context.get("intent") or context.get("user_intent")
+                context_parts.append(f"Intent: {intent}")
+
+            # Additional semantic markers
+            if "topic" in context:
+                context_parts.append(f"Topic: {context['topic']}")
+
+            if "sentiment" in context:
+                context_parts.append(f"Sentiment: {context['sentiment']}")
+
+            # Combine context with text
+            if context_parts:
+                enhanced_text = f"[{' | '.join(context_parts)}] {text}"
+
+        # Generate embedding using the enhanced text
+        try:
+            embedding = self.embeddings.embed_query(enhanced_text)
+            return embedding
+        except Exception as e:
+            logger.warning(f"Failed to create contextual embedding: {e}")
+            # Fallback to regular embedding
+            return self.embeddings.embed_query(text)
+
+    def hybrid_search(
+        self,
+        query_text: str,
+        context: dict[str, Any] | None = None,
+        k: int | None = None,
+        alpha: float = 0.7,
+        metadata_filters: dict[str, Any] | None = None
+    ) -> list[tuple[Document, float]]:
+        """
+        Perform hybrid search combining semantic similarity and metadata matching.
+
+        Args:
+            query_text (str): Text query to search for.
+            context (dict[str, Any] | None): Query context for enhanced embedding.
+            k (int | None): Number of results to return.
+            alpha (float): Weight for semantic similarity (0-1). (1-alpha) for metadata match.
+            metadata_filters (dict[str, Any] | None): Required metadata matches.
+
+        Returns:
+            list[tuple[Document, float]]: Documents with hybrid scores.
+
+        Example:
+            >>> context = {"domain": "finance", "category": "investment"}
+            >>> filters = {"data_quality_score": 0.8}
+            >>> results = kb.hybrid_search("market volatility", context, metadata_filters=filters)
+        """
+        if self.vector_store is None:
+            return []
+
+        k = k or self.settings.max_examples_per_query
+        search_k = k * 3  # Get more for better filtering
+
+        # Create contextual embedding for query
+        query_embedding = self.create_contextual_embedding(query_text, context)
+
+        # Perform similarity search
+        similar_docs = self.vector_store.similarity_search_with_score_by_vector(
+            query_embedding, k=search_k
+        )
+
+        # Calculate hybrid scores
+        hybrid_results = []
+        for doc, semantic_score in similar_docs:
+            # Calculate metadata similarity score
+            metadata_score = 0.0
+            metadata_matches = 0
+            total_metadata_checks = 0
+
+            if context:
+                for key, value in context.items():
+                    if key in ['boost', 'priority']:
+                        continue
+                    metadata_key = f"data_{key}"
+                    total_metadata_checks += 1
+                    if metadata_key in doc.metadata and doc.metadata[metadata_key] == value:
+                        metadata_matches += 1
+
+                if total_metadata_checks > 0:
+                    metadata_score = metadata_matches / total_metadata_checks
+
+            # Apply metadata filters
+            if metadata_filters:
+                passes_filter = all(
+                    doc.metadata.get(key) == value
+                    for key, value in metadata_filters.items()
+                )
+                if not passes_filter:
+                    continue
+
+            # Calculate hybrid score (lower is better for FAISS distance)
+            # Convert FAISS distance to similarity and combine with metadata
+            semantic_similarity = 1 / (1 + semantic_score)  # Convert distance to similarity
+            hybrid_score = alpha * semantic_similarity + (1 - alpha) * metadata_score
+
+            hybrid_results.append((doc, hybrid_score))
+
+        # Sort by hybrid score (higher is better)
+        hybrid_results.sort(key=lambda x: x[1], reverse=True)
+
+        return hybrid_results[:k]
