@@ -6,22 +6,22 @@ from pathlib import Path
 
 import pandas as pd
 from jinja2 import Template
-from langchain.embeddings import OpenAIEmbeddings
+
 from langchain.output_parsers import PydanticOutputParser
 from langchain.schema import Document
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 
 from .config import Settings
 from .models import LabelResponse
 from .openrouter import OpenRouterClient
+from .corporate import CorporateOpenAIClient
 
 
 def build_vector_store(df: pd.DataFrame, text_column: str, settings: Settings) -> FAISS:
     """Create a FAISS vector store from dataframe text column."""
-    embeddings = OpenAIEmbeddings(
-        openai_api_key=settings.openai_api_key,
-        model=settings.embedding_model,
-    )
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
+    embeddings = HuggingFaceEmbeddings(model_name=settings.embedding_model)
     docs = [
         Document(page_content=str(row[text_column]), metadata=row.to_dict())
         for _, row in df.iterrows()
@@ -41,10 +41,17 @@ class AutoLabeler:
 
     def __init__(self, settings: Settings, template_path: Path | None = None) -> None:
         self.settings = settings
-        self.llm = OpenRouterClient(
-            api_key=settings.openrouter_api_key,
-            model=settings.llm_model,
-        )
+        if settings.corporate_base_url:
+            self.llm = CorporateOpenAIClient(
+                api_key=settings.corporate_api_key,
+                base_url=settings.corporate_base_url,
+                model=settings.corporate_model,
+            )
+        else:
+            self.llm = OpenRouterClient(
+                api_key=settings.openrouter_api_key,
+                model=settings.llm_model,
+            )
         self.parser = PydanticOutputParser(pydantic_object=LabelResponse)
         if template_path is None:
             template_path = Path(__file__).parent / "templates" / "label_prompt.jinja"
