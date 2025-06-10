@@ -276,7 +276,7 @@ class KnowledgeBase:
         Get statistics about the knowledge base.
 
         Returns:
-            dict: Statistics including total examples, sources, and metadata.
+            dict: Statistics including total examples, sources, and label distribution.
 
         Example:
             >>> stats = kb.get_stats()
@@ -285,6 +285,10 @@ class KnowledgeBase:
         stats = self.metadata.copy()
         if self.vector_store:
             stats["vector_store_size"] = self.vector_store.index.ntotal
+
+        # Add label distribution
+        stats["label_distribution"] = self.get_label_distribution()
+
         return stats
 
     def clear_knowledge_base(self) -> None:
@@ -306,3 +310,133 @@ class KnowledgeBase:
         self.kb_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Cleared knowledge base for {self.dataset_name}")
+
+    def get_examples_by_label(
+        self,
+        target_label: str,
+        max_examples: int = 10,
+        filter_source: str | None = None
+    ) -> list[Document]:
+        """
+        Get examples with a specific label from the knowledge base.
+
+        Args:
+            target_label (str): The label to filter examples by.
+            max_examples (int): Maximum number of examples to return.
+            filter_source (str | None): Filter by source ("human", "model", or "synthetic").
+
+        Returns:
+            list[Document]: Examples with the specified label.
+
+        Example:
+            >>> positive_examples = kb.get_examples_by_label("positive", max_examples=5)
+            >>> human_examples = kb.get_examples_by_label("negative", filter_source="human")
+        """
+        if self.vector_store is None:
+            return []
+
+        # Get all documents from the vector store
+        all_docs = []
+        try:
+            # Use a broad search to get all documents
+            temp_docs = self.vector_store.similarity_search("", k=self.vector_store.index.ntotal)
+            all_docs = temp_docs
+        except Exception:
+            # Fallback: use a more conservative approach
+            try:
+                temp_docs = self.vector_store.similarity_search(" ", k=1000)
+                all_docs = temp_docs
+            except Exception as e:
+                logger.warning(f"Could not retrieve all documents: {e}")
+                return []
+
+        # Filter by label and source
+        filtered_docs = []
+        for doc in all_docs:
+            if doc.metadata.get("label") == target_label:
+                if filter_source is None or doc.metadata.get("source") == filter_source:
+                    filtered_docs.append(doc)
+
+            if len(filtered_docs) >= max_examples:
+                break
+
+        return filtered_docs[:max_examples]
+
+    def get_label_distribution(self) -> dict[str, int]:
+        """
+        Get the distribution of labels in the knowledge base.
+
+        Returns:
+            dict[str, int]: Mapping of labels to their counts.
+
+        Example:
+            >>> distribution = kb.get_label_distribution()
+            >>> print(f"Positive examples: {distribution.get('positive', 0)}")
+        """
+        if not self.data_path.exists():
+            return {}
+
+        try:
+            df = pd.read_csv(self.data_path)
+            if "label" in df.columns:
+                return df["label"].value_counts().to_dict()
+            # Fallback: look for any column that might contain labels
+            for col in df.columns:
+                if "label" in col.lower():
+                    return df[col].value_counts().to_dict()
+        except Exception as e:
+            logger.warning(f"Could not read label distribution from CSV: {e}")
+
+        return {}
+
+    def export_synthetic_data(
+        self,
+        output_path: Path,
+        include_metadata: bool = True,
+        filter_confidence: float | None = None
+    ) -> None:
+        """
+        Export synthetic examples from the knowledge base to CSV.
+
+        Args:
+            output_path (Path): Path to save the exported synthetic data.
+            include_metadata (bool): Whether to include generation metadata columns.
+            filter_confidence (float | None): Minimum confidence to include.
+
+        Example:
+            >>> kb.export_synthetic_data(Path("synthetic.csv"), filter_confidence=0.8)
+        """
+        if not self.data_path.exists():
+            logger.warning("No data file found to export from")
+            return
+
+        try:
+            df = pd.read_csv(self.data_path)
+
+            # Filter for synthetic examples only
+            synthetic_df = df[df["source"] == "synthetic"].copy()
+
+            if synthetic_df.empty:
+                logger.warning("No synthetic examples found in knowledge base")
+                return
+
+            # Filter by confidence if specified
+            if filter_confidence is not None and "confidence" in synthetic_df.columns:
+                synthetic_df = synthetic_df[synthetic_df["confidence"] >= filter_confidence]
+
+            # Select columns to export
+            if include_metadata:
+                # Include all columns
+                export_df = synthetic_df
+            else:
+                # Include only essential columns
+                essential_cols = ["text", "label", "confidence", "source", "added_at"]
+                available_cols = [col for col in essential_cols if col in synthetic_df.columns]
+                export_df = synthetic_df[available_cols]
+
+            export_df.to_csv(output_path, index=False)
+            logger.info(f"Exported {len(export_df)} synthetic examples to {output_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to export synthetic data: {e}")
+            raise

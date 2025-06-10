@@ -18,6 +18,7 @@ from .knowledge_base import KnowledgeBase
 from .models import LabelResponse
 from .openrouter import OpenRouterClient
 from .prompt_store import PromptStore
+from .synthetic_generator import SyntheticDataGenerator
 
 
 class AutoLabeler:
@@ -56,6 +57,9 @@ class AutoLabeler:
 
         # Initialize prompt store for tracking all prompts
         self.prompt_store = PromptStore(dataset_name)
+
+        # Initialize synthetic data generator
+        self._synthetic_generator: SyntheticDataGenerator | None = None
 
         # Initialize LLM client based on configuration
         if settings.corporate_base_url:
