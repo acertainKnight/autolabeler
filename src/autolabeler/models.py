@@ -158,3 +158,118 @@ class MultiFieldLabelResponse(BaseModel):
         default=None,
         description="Additional metadata about the extraction process"
     )
+
+
+class LabelingRule(BaseModel):
+    """
+    Represents a single labeling rule derived from training data.
+
+    Contains patterns, conditions, and examples that define when to apply specific labels.
+    """
+
+    rule_id: str = Field(description="Unique identifier for this rule")
+    label: str = Field(description="The label this rule applies to")
+    pattern_description: str = Field(description="Human-readable description of the pattern")
+    conditions: list[str] = Field(description="Specific conditions that trigger this rule")
+    indicators: list[str] = Field(description="Key words, phrases, or patterns that indicate this label")
+    examples: list[str] = Field(description="Representative examples that demonstrate this rule")
+    counter_examples: list[str] | None = Field(
+        default=None,
+        description="Examples that might seem to fit but don't apply to this rule"
+    )
+    confidence: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Confidence in the reliability of this rule"
+    )
+    frequency: int = Field(
+        default=0,
+        description="Number of training examples that support this rule"
+    )
+    edge_cases: list[str] | None = Field(
+        default=None,
+        description="Known edge cases or exceptions to this rule"
+    )
+    creation_timestamp: str = Field(description="When this rule was created")
+    last_updated: str = Field(description="When this rule was last updated")
+    source_data_hash: str | None = Field(
+        default=None,
+        description="Hash of source data used to create this rule"
+    )
+
+
+class RuleSet(BaseModel):
+    """
+    Collection of labeling rules for a specific dataset and task.
+
+    Represents the complete annotation guidelines derived from training data.
+    """
+
+    dataset_name: str = Field(description="Name of the dataset this ruleset applies to")
+    task_description: str = Field(description="Description of the labeling task")
+    label_categories: list[str] = Field(description="All possible labels in this task")
+    rules: list[LabelingRule] = Field(description="Individual labeling rules")
+    general_guidelines: list[str] = Field(description="General annotation principles")
+    disambiguation_rules: list[str] | None = Field(
+        default=None,
+        description="Rules for handling ambiguous cases"
+    )
+    quality_checks: list[str] | None = Field(
+        default=None,
+        description="Quality assurance guidelines for annotators"
+    )
+    version: str = Field(description="Version of this ruleset")
+    creation_timestamp: str = Field(description="When this ruleset was created")
+    last_updated: str = Field(description="When this ruleset was last updated")
+    statistics: dict[str, Any] | None = Field(
+        default=None,
+        description="Statistics about rule coverage and performance"
+    )
+
+
+class RuleGenerationResult(BaseModel):
+    """
+    Result of the rule generation process.
+
+    Contains the generated ruleset along with metadata about the generation process.
+    """
+
+    ruleset: RuleSet = Field(description="The generated labeling ruleset")
+    generation_metadata: dict[str, Any] = Field(description="Metadata about the rule generation process")
+    data_analysis: dict[str, Any] = Field(description="Analysis of the input data used for rule generation")
+    rule_conflicts: list[str] | None = Field(
+        default=None,
+        description="Identified conflicts or inconsistencies between rules"
+    )
+    coverage_analysis: dict[str, Any] | None = Field(
+        default=None,
+        description="Analysis of how well the rules cover the training data"
+    )
+    recommendations: list[str] | None = Field(
+        default=None,
+        description="Recommendations for improving the ruleset"
+    )
+
+
+class RuleUpdateResult(BaseModel):
+    """
+    Result of updating an existing ruleset with new data.
+
+    Contains information about what changed and the updated ruleset.
+    """
+
+    updated_ruleset: RuleSet = Field(description="The updated labeling ruleset")
+    changes_made: list[str] = Field(description="List of changes made to the ruleset")
+    new_rules_added: int = Field(default=0, description="Number of new rules added")
+    rules_modified: int = Field(default=0, description="Number of existing rules modified")
+    rules_removed: int = Field(default=0, description="Number of rules removed")
+    confidence_changes: dict[str, float] | None = Field(
+        default=None,
+        description="Changes in rule confidence scores"
+    )
+    update_metadata: dict[str, Any] = Field(description="Metadata about the update process")
+    validation_results: dict[str, Any] | None = Field(
+        default=None,
+        description="Validation results for the updated ruleset"
+    )

@@ -21,6 +21,7 @@ dependencies = [
     'jinja2>=3.1',
     'faiss-cpu>=1.7',
     'click>=8.0',
+    'markdown>=3.4',
 ]
 
 [project.scripts]

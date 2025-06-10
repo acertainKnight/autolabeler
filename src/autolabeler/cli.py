@@ -13,6 +13,7 @@ from .config import Settings
 from .ensemble import EnsembleLabeler
 from .labeler import AutoLabeler
 from .model_config import EnsembleMethod, ModelConfig
+from .rule_generator import RuleGenerator
 from .synthetic_generator import SyntheticDataGenerator
 
 
@@ -484,6 +485,228 @@ def create_config():
 
     click.echo(f"Sample configuration created at: {config_path}")
     click.echo("Please edit the file to add your API keys and adjust model configurations.")
+
+
+@cli.command()
+@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
+@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
+@click.option('--text-column', required=True, help='Name of column containing text data')
+@click.option('--label-column', required=True, help='Name of column containing labels')
+@click.option('--dataset-name', required=True, help='Name of the dataset for rule generation')
+@click.option('--task-description', help='Description of the labeling task')
+@click.option('--batch-size', type=int, default=50, help='Number of examples to analyze per batch')
+@click.option('--min-examples', type=int, default=3, help='Minimum examples needed to create a rule')
+@click.option('--output-format', default='markdown',
+              type=click.Choice(['markdown', 'html', 'json']),
+              help='Output format for human-readable guidelines')
+@click.option('--guidelines-file', type=click.Path(path_type=Path),
+              help='Output file for human-readable annotation guidelines')
+def generate_rules(
+    config_file: Path,
+    input_file: Path,
+    text_column: str,
+    label_column: str,
+    dataset_name: str,
+    task_description: str | None,
+    batch_size: int,
+    min_examples: int,
+    output_format: str,
+    guidelines_file: Path | None,
+):
+    """Generate labeling rules from labeled training data."""
+    config = load_json_config(config_file)
+    settings = create_settings_from_config(config)
+
+    # Load input data
+    logger.info(f"Loading labeled data from {input_file}")
+    df = pd.read_csv(input_file)
+
+    # Validate columns
+    if text_column not in df.columns:
+        logger.error(f"Text column '{text_column}' not found in data")
+        sys.exit(1)
+    if label_column not in df.columns:
+        logger.error(f"Label column '{label_column}' not found in data")
+        sys.exit(1)
+
+    # Create rule generator
+    rule_generator = RuleGenerator(dataset_name, settings)
+
+    # Generate rules
+    logger.info("Analyzing data and generating labeling rules...")
+    result = rule_generator.generate_rules_from_data(
+        df=df,
+        text_column=text_column,
+        label_column=label_column,
+        task_description=task_description,
+        batch_size=batch_size,
+        min_examples_per_rule=min_examples,
+    )
+
+    # Print summary
+    ruleset = result.ruleset
+    logger.info(f"Generated {len(ruleset.rules)} rules for {len(ruleset.label_categories)} labels")
+
+    click.echo(f"\n=== Rule Generation Summary ===")
+    click.echo(f"Dataset: {ruleset.dataset_name}")
+    click.echo(f"Task: {ruleset.task_description}")
+    click.echo(f"Total rules: {len(ruleset.rules)}")
+    click.echo(f"Label categories: {', '.join(ruleset.label_categories)}")
+
+    # Show rules per label
+    rules_per_label = {}
+    for rule in ruleset.rules:
+        rules_per_label[rule.label] = rules_per_label.get(rule.label, 0) + 1
+
+    click.echo("\nRules per label:")
+    for label, count in rules_per_label.items():
+        click.echo(f"  {label}: {count} rules")
+
+    # Export human-readable guidelines if requested
+    if guidelines_file:
+        rule_generator.export_ruleset_for_humans(
+            ruleset, guidelines_file, format=output_format
+        )
+        click.echo(f"\nAnnotation guidelines exported to: {guidelines_file}")
+
+    # Show recommendations
+    if result.recommendations:
+        click.echo("\nRecommendations:")
+        for rec in result.recommendations:
+            click.echo(f"  - {rec}")
+
+    # Show coverage analysis
+    if result.coverage_analysis:
+        coverage = result.coverage_analysis
+        click.echo(f"\nRule coverage: {coverage.get('overall_coverage', 0):.2%} of training data")
+
+
+@cli.command()
+@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
+@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
+@click.option('--text-column', required=True, help='Name of column containing text data')
+@click.option('--label-column', required=True, help='Name of column containing labels')
+@click.option('--dataset-name', required=True, help='Name of the dataset for rule updates')
+@click.option('--output-format', default='markdown',
+              type=click.Choice(['markdown', 'html', 'json']),
+              help='Output format for updated guidelines')
+@click.option('--guidelines-file', type=click.Path(path_type=Path),
+              help='Output file for updated annotation guidelines')
+def update_rules(
+    config_file: Path,
+    input_file: Path,
+    text_column: str,
+    label_column: str,
+    dataset_name: str,
+    output_format: str,
+    guidelines_file: Path | None,
+):
+    """Update existing labeling rules with new training data."""
+    config = load_json_config(config_file)
+    settings = create_settings_from_config(config)
+
+    # Load new training data
+    logger.info(f"Loading new labeled data from {input_file}")
+    df = pd.read_csv(input_file)
+
+    # Validate columns
+    if text_column not in df.columns:
+        logger.error(f"Text column '{text_column}' not found in data")
+        sys.exit(1)
+    if label_column not in df.columns:
+        logger.error(f"Label column '{label_column}' not found in data")
+        sys.exit(1)
+
+    # Create rule generator
+    rule_generator = RuleGenerator(dataset_name, settings)
+
+    # Check if existing ruleset exists
+    try:
+        existing_ruleset = rule_generator.load_latest_ruleset()
+        logger.info(f"Found existing ruleset version {existing_ruleset.version}")
+    except FileNotFoundError:
+        logger.error(f"No existing ruleset found for dataset '{dataset_name}'")
+        logger.error("Use 'generate-rules' command to create an initial ruleset first")
+        sys.exit(1)
+
+    # Update rules
+    logger.info("Updating rules with new training data...")
+    update_result = rule_generator.update_rules_with_new_data(
+        new_df=df,
+        text_column=text_column,
+        label_column=label_column,
+        existing_ruleset=existing_ruleset,
+    )
+
+    # Print update summary
+    click.echo(f"\n=== Rule Update Summary ===")
+    click.echo(f"Dataset: {update_result.updated_ruleset.dataset_name}")
+    click.echo(f"Version: {existing_ruleset.version} -> {update_result.updated_ruleset.version}")
+    click.echo(f"New rules added: {update_result.new_rules_added}")
+    click.echo(f"Rules modified: {update_result.rules_modified}")
+    click.echo(f"Rules removed: {update_result.rules_removed}")
+
+    # Show changes made
+    if update_result.changes_made:
+        click.echo("\nChanges made:")
+        for change in update_result.changes_made[:10]:  # Limit to first 10
+            click.echo(f"  - {change}")
+        if len(update_result.changes_made) > 10:
+            click.echo(f"  ... and {len(update_result.changes_made) - 10} more changes")
+
+    # Export updated guidelines if requested
+    if guidelines_file:
+        rule_generator.export_ruleset_for_humans(
+            update_result.updated_ruleset, guidelines_file, format=output_format
+        )
+        click.echo(f"\nUpdated annotation guidelines exported to: {guidelines_file}")
+
+    logger.info("Rule update completed successfully")
+
+
+@cli.command()
+@click.argument('dataset_name')
+@click.option('--config-file', type=click.Path(exists=True, path_type=Path),
+              help='Configuration file for settings')
+@click.option('--output-format', default='markdown',
+              type=click.Choice(['markdown', 'html', 'json']),
+              help='Output format for guidelines')
+@click.option('--output-file', type=click.Path(path_type=Path), required=True,
+              help='Output file for annotation guidelines')
+def export_rules(
+    dataset_name: str,
+    config_file: Path | None,
+    output_format: str,
+    output_file: Path,
+):
+    """Export the latest ruleset as human-readable annotation guidelines."""
+    if config_file:
+        config = load_json_config(config_file)
+        settings = create_settings_from_config(config)
+    else:
+        settings = Settings()  # Use defaults
+
+    # Create rule generator
+    rule_generator = RuleGenerator(dataset_name, settings)
+
+    # Load latest ruleset
+    try:
+        ruleset = rule_generator.load_latest_ruleset()
+        logger.info(f"Found ruleset version {ruleset.version}")
+    except FileNotFoundError:
+        logger.error(f"No ruleset found for dataset '{dataset_name}'")
+        logger.error("Use 'generate-rules' command to create a ruleset first")
+        sys.exit(1)
+
+    # Export guidelines
+    rule_generator.export_ruleset_for_humans(
+        ruleset, output_file, format=output_format
+    )
+
+    click.echo(f"Annotation guidelines exported to: {output_file}")
+    click.echo(f"Format: {output_format}")
+    click.echo(f"Ruleset version: {ruleset.version}")
+    click.echo(f"Total rules: {len(ruleset.rules)}")
 
 
 if __name__ == "__main__":

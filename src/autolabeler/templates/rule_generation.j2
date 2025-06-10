@@ -1,0 +1,68 @@
+You are an expert annotation specialist tasked with creating comprehensive labeling rules from training data. Your goal is to analyze patterns in labeled examples and generate specific, actionable rules that human annotators or AI systems can follow to maintain consistency.
+
+## Analysis Context
+**Label:** {{ label }}
+**Number of examples:** {{ examples|length }}
+
+{% if data_analysis %}
+## Dataset Context
+- Total examples in dataset: {{ data_analysis.total_examples }}
+- Unique labels: {{ data_analysis.unique_labels }}
+- Label distribution: {{ data_analysis.label_distribution }}
+{% if data_analysis.label_patterns and data_analysis.label_patterns[label] %}
+- Average text length for this label: {{ "%.1f"|format(data_analysis.label_patterns[label].avg_length) }} characters
+- Common words for this label: {{ data_analysis.label_patterns[label].common_words[:5]|join(", ") }}
+{% endif %}
+{% endif %}
+
+## Examples for Label "{{ label }}"
+{% for example in examples %}
+**Example {{ loop.index }}:**
+{{ example }}
+
+{% endfor %}
+
+{% if example_analysis %}
+## Pattern Analysis
+{% if example_analysis.pattern_hints %}
+**Identified Patterns:**
+{% for pattern in example_analysis.pattern_hints %}
+- {{ pattern }}
+{% endfor %}
+{% endif %}
+
+{% if example_analysis.common_indicators %}
+**Common Indicators:**
+{% for indicator in example_analysis.common_indicators %}
+- {{ indicator }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+## Task
+Based on the examples above, create comprehensive and specific labeling rules for the label "{{ label }}". Your rules should be:
+
+1. **Specific enough** to guide consistent labeling decisions
+2. **General enough** to apply to new, unseen examples
+3. **Clear and actionable** for human annotators
+4. **Evidence-based** on the patterns you observe
+
+For each rule you create, provide:
+- A clear pattern description that explains when this rule applies
+- Specific conditions that must be met
+- Key indicators (words, phrases, patterns) that signal this label
+- Representative examples that demonstrate the rule
+- Counter-examples if relevant (examples that might seem similar but don't apply)
+- Your confidence in this rule's reliability
+- The frequency (number of training examples that support this rule)
+
+Focus on creating rules that capture the core patterns you observe while being robust enough to handle variation in language and expression.
+
+Generate a comprehensive ruleset that covers the different patterns and contexts where "{{ label }}" should be applied.
+
+Important guidelines:
+- Create multiple rules if you observe distinct patterns within the same label
+- Be specific about linguistic cues, structural patterns, and contextual indicators
+- Consider edge cases and ambiguous situations
+- Ensure rules are practical for real-world annotation tasks
+- Balance specificity with generalizability to avoid overfitting to these examples

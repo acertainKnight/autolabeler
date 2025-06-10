@@ -1,0 +1,86 @@
+You are an expert annotation specialist tasked with updating an existing labeling ruleset based on new training data. Your goal is to refine and improve the existing rules while maintaining consistency and incorporating new patterns discovered in the fresh data.
+
+## Current Ruleset
+**Dataset:** {{ existing_ruleset.dataset_name }}
+**Version:** {{ existing_ruleset.version }}
+**Last Updated:** {{ existing_ruleset.last_updated }}
+
+### Current Rules Summary
+- Total rules: {{ existing_ruleset.rules|length }}
+- Label categories: {{ existing_ruleset.label_categories|join(", ") }}
+
+### Existing Rules
+{% for rule in existing_ruleset.rules %}
+**Rule {{ loop.index }}: {{ rule.pattern_description }}**
+- Label: {{ rule.label }}
+- Confidence: {{ rule.confidence }}
+- Frequency: {{ rule.frequency }}
+- Conditions: {{ rule.conditions|join("; ") }}
+- Indicators: {{ rule.indicators|join(", ") }}
+- Examples: {{ rule.examples[:2]|join(" | ") }}
+
+{% endfor %}
+
+### Current General Guidelines
+{% for guideline in existing_ruleset.general_guidelines %}
+- {{ guideline }}
+{% endfor %}
+
+{% if existing_ruleset.disambiguation_rules %}
+### Current Disambiguation Rules
+{% for rule in existing_ruleset.disambiguation_rules %}
+- {{ rule }}
+{% endfor %}
+{% endif %}
+
+## New Training Data
+{% if new_data_analysis %}
+**New Data Summary:**
+- Total new examples: {{ new_data_analysis.total_examples }}
+- Label distribution: {{ new_data_analysis.label_distribution }}
+- Average text length: {{ "%.1f"|format(new_data_analysis.avg_text_length) }}
+{% endif %}
+
+### New Examples by Label
+{% for label, examples in new_examples.items() %}
+**{{ label }} ({{ examples|length }} examples):**
+{% for example in examples[:5] %}
+- {{ example }}
+{% endfor %}
+{% if examples|length > 5 %}
+... and {{ examples|length - 5 }} more examples
+{% endif %}
+
+{% endfor %}
+
+## Update Task
+Based on the new training data, analyze and update the existing ruleset. Consider:
+
+1. **Rule Validation**: Do the new examples confirm or challenge existing rules?
+2. **Pattern Discovery**: Are there new patterns in the data that require additional rules?
+3. **Confidence Adjustment**: Should confidence scores be updated based on new evidence?
+4. **Rule Refinement**: Can existing rules be made more specific or general based on new data?
+5. **Conflict Resolution**: Do any new examples create conflicts with existing rules?
+
+### Specific Instructions:
+- **Preserve good rules**: Don't change rules that are working well
+- **Refine weak rules**: Improve rules with low confidence or few supporting examples
+- **Add new rules**: Create new rules for patterns not covered by existing ones
+- **Remove outdated rules**: Consider removing rules that new data contradicts
+- **Update frequencies**: Adjust frequency counts based on all available data
+- **Maintain consistency**: Ensure all rules work together coherently
+
+### Update Requirements:
+For each change you make, provide:
+- **Type of change**: Added, Modified, or Removed
+- **Justification**: Why this change is necessary based on the new data
+- **Impact assessment**: How this affects the overall ruleset
+
+Generate an updated ruleset that:
+1. Incorporates insights from the new data
+2. Maintains the strengths of the existing ruleset
+3. Resolves any conflicts or inconsistencies
+4. Improves overall coverage and accuracy
+5. Preserves the practical usability for annotators
+
+Focus on making targeted improvements rather than wholesale changes unless clearly justified by the new evidence.
