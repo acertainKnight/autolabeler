@@ -1,0 +1,59 @@
+You are an expert at extracting speaker information from financial news headlines. Your task is to identify who is speaking or being quoted in each headline and return their lowercase lastname.
+
+## Task: Speaker Identification
+
+You need to extract the speaker's lastname (in lowercase) from Federal Reserve communications headlines.
+
+### Common Patterns to Look For:
+
+1. **FED Format** (very common): "*FED'S [LASTNAME] SAYS..." → lastname
+2. **Simple Format** (very common): "*[LASTNAME] SAYS..." → lastname
+3. **FED Action Format**: "*FED'S [LASTNAME] SEES..." or "*FED'S [LASTNAME] [ACTION]..." → lastname
+4. **Title Format**: "*[TITLE] [FIRSTNAME] [LASTNAME] SAYS..." → lastname
+5. **Complex Format**: "*[ORGANIZATION]'S [LASTNAME] [ACTION]..." → lastname
+6. **Action Format**: "*[LASTNAME] SEES..." or "*[LASTNAME] [OTHER_ACTION]..." → lastname
+
+### Specific Guidelines:
+
+- **Extract only the lastname** of the person speaking or being quoted
+- **Return in lowercase** (e.g., "bernanke", "yellen", "powell")
+- **Federal Reserve Officials**: Look for titles like "FED'S", "FEDERAL RESERVE'S", Fed governors, regional bank presidents
+- **Multiple speakers**: If multiple people are mentioned, extract the primary speaker (usually first mentioned)
+- **No clear speaker**: If no individual speaker is identifiable, return "unknown" unless the "speaker" is the Fed itself.
+- **Speaker is the Fed itself**: If the speaker is the Fed itself, return "fed".
+
+### Examples:
+
+- "*FED'S ROSENGREN SAYS ECONOMY MAY IMPROVE..." → "rosengren"
+- "*BERNANKE SAYS MAY SEE SOME STABILIZATION..." → "bernanke"
+- "*FED'S LOCKHART SEES ENCOURAGING SIGNS..." → "lockhart"
+- "*CHICAGO FED'S EVANS SEES WEAK CONSTRUCTION..." → "evans"
+- "*SENATOR SHELBY SAYS HE OPPOSES SECOND TERM FOR BERNANKE..." → "shelby"
+- "*TREASURIES RISE; FED'S ROSENGREN SAYS RECOVERY..." → "rosengren"
+- "*FED SAYS ECONOMY MAY IMPROVE..." → "fed"
+
+{% if examples %}
+## Reference Examples:
+{% for ex in examples %}
+---
+**Example {{ loop.index }}:**
+Headline: {{ ex.page_content }}
+Speaker: {{ ex.metadata.label }}
+{% endfor %}
+{% endif %}
+
+## Task: Extract Speaker Information
+**Headline:** {{ text }}
+
+**Your task:** Extract the speaker's lastname from this Federal Reserve headline and provide it in the "label" field.
+
+**Instructions:**
+- **label**: Put the speaker's lastname in lowercase (e.g., "bernanke", "yellen", "powell"). If no clear speaker, use "unknown".
+- **confidence**: Provide a confidence score between 0.0 and 1.0 for your identification.
+- **reasoning**: Brief explanation of how you identified the speaker and which pattern you used.
+
+**Remember:**
+- Focus on the person who is speaking or being quoted
+- Return only the lastname in lowercase
+- If multiple people are mentioned, choose the primary speaker (usually first mentioned or directly quoted)
+- Use "unknown" only if no individual speaker can be identified

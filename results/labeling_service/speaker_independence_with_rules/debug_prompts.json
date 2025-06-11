@@ -1,0 +1,1322 @@
+[
+  {
+    "prompt_id": "747ab044bc020b9a",
+    "text": "*UAW PRESIDENT PRAISES BIDEN FED PICKS COOK, JEFFERSON, RASKIN",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *BIDEN PICKS COOK, JEFFERSON FOR FED BOARD OF GOVERNORS\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *BIDEN PICKS COOK, JEFFERSON FOR FED BOARD OF GOVERNORS\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *BIDEN PICKS COOK, JEFFERSON FOR FED BOARD OF GOVERNORS\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *BIDEN PICKS COOK, JEFFERSON FOR FED BOARD OF GOVERNORS\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *BIDEN PICKS COOK, JEFFERSON FOR FED BOARD OF GOVERNORS\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *UAW PRESIDENT PRAISES BIDEN FED PICKS COOK, JEFFERSON, RASKIN\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.634432"
+  },
+  {
+    "prompt_id": "16e8baf6321641e1",
+    "text": "*SUMMERS SAYS TREASURY, FED HAVE CLEAR SENSE OF RESPECTIVE ROLES",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *SUMMERS SAYS FED HAS MADE CLEAR ITS PLEDGE TO TRANSPARENCY\n\nLabel: -1\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *SUMMERS SAYS FED HAS MADE CLEAR ITS PLEDGE TO TRANSPARENCY\n\nLabel: -1\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *SUMMERS SAYS FED HAS MADE CLEAR ITS PLEDGE TO TRANSPARENCY\n\nLabel: -1\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *SUMMERS SAYS FED HAS MADE CLEAR ITS PLEDGE TO TRANSPARENCY\n\nLabel: -1\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *SUMMERS SAYS FED HAS MADE CLEAR ITS PLEDGE TO TRANSPARENCY\n\nLabel: -1\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *SUMMERS SAYS TREASURY, FED HAVE CLEAR SENSE OF RESPECTIVE ROLES\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.656590"
+  },
+  {
+    "prompt_id": "6663a5e1abf6fcd6",
+    "text": "*HASSETT SAYS WE 100% RESPECT FED INDEPENDENCE",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *HASSETT SAYS WE 100 PERCENT RESPECT INDEPENDENCE OF THE FED\n\nLabel: -2\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *HASSETT SAYS WE 100 PERCENT RESPECT INDEPENDENCE OF THE FED\n\nLabel: -2\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *HASSETT SAYS WE 100 PERCENT RESPECT INDEPENDENCE OF THE FED\n\nLabel: -2\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *HASSETT SAYS WE 100 PERCENT RESPECT INDEPENDENCE OF THE FED\n\nLabel: -2\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *HASSETT SAYS WE 100 PERCENT RESPECT INDEPENDENCE OF THE FED\n\nLabel: -2\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *HASSETT SAYS WE 100% RESPECT FED INDEPENDENCE\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.677615"
+  },
+  {
+    "prompt_id": "27fdc04c58d9390c",
+    "text": "*UK'S SUNAK: PRIORITY IS TO REDUCE INFLATION",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *SUNAK: PRIORITY IS TO KEEP UK INFLATION UNDER CONTROL\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *SUNAK: PRIORITY IS TO KEEP UK INFLATION UNDER CONTROL\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *SUNAK: PRIORITY IS TO KEEP UK INFLATION UNDER CONTROL\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *SUNAK: PRIORITY IS TO KEEP UK INFLATION UNDER CONTROL\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *SUNAK: PRIORITY IS TO KEEP UK INFLATION UNDER CONTROL\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *UK'S SUNAK: PRIORITY IS TO REDUCE INFLATION\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.699184"
+  },
+  {
+    "prompt_id": "264eb6f6f941dbce",
+    "text": "*CAMERON SAYS `RIGHT NOW' BRITAIN NEEDS LOW-INTEREST RATES",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *JAVID: UK TO USE LOW INTEREST RATES TO FUND INVESTMENT\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *JAVID: UK TO USE LOW INTEREST RATES TO FUND INVESTMENT\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *JAVID: UK TO USE LOW INTEREST RATES TO FUND INVESTMENT\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *JAVID: UK TO USE LOW INTEREST RATES TO FUND INVESTMENT\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *JAVID: UK TO USE LOW INTEREST RATES TO FUND INVESTMENT\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *CAMERON SAYS `RIGHT NOW' BRITAIN NEEDS LOW-INTEREST RATES\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.721441"
+  },
+  {
+    "prompt_id": "f286cad1e24cc2df",
+    "text": "*HAMMOND SAYS CARNEY TO SEE ECONOMY THROUGH `TURBULENT PERIOD'",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *HAMMOND SAYS CARNEY TO SEE ECONOMY THROUGH `TURBULENT PERIOD'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.744608"
+  },
+  {
+    "prompt_id": "973099a5c9382add",
+    "text": "*COHN DECLINES TO COMMENT ON FED CHAIR SEARCH",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *COHN SAYS FED VICE CHAIR SEARCH SHOULD END RELATIVELY SHORTLY\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *COHN SAYS FED VICE CHAIR SEARCH SHOULD END RELATIVELY SHORTLY\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *COHN SAYS FED VICE CHAIR SEARCH SHOULD END RELATIVELY SHORTLY\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *COHN SAYS FED VICE CHAIR SEARCH SHOULD END RELATIVELY SHORTLY\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *COHN SAYS FED VICE CHAIR SEARCH SHOULD END RELATIVELY SHORTLY\n\nLabel: -9999\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *COHN DECLINES TO COMMENT ON FED CHAIR SEARCH\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.766171"
+  },
+  {
+    "prompt_id": "452e0afa7a8b13cd",
+    "text": "*SUNAK: NOW THAT INFLATION HAS HALVED, WE CAN BEGIN TO CUT TAX",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *SUNAK: MUST LOWER INFLATION, CONTROL BORROWING, THEN CUT TAX\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *SUNAK: MUST LOWER INFLATION, CONTROL BORROWING, THEN CUT TAX\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *SUNAK: MUST LOWER INFLATION, CONTROL BORROWING, THEN CUT TAX\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *SUNAK: MUST LOWER INFLATION, CONTROL BORROWING, THEN CUT TAX\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *SUNAK: MUST LOWER INFLATION, CONTROL BORROWING, THEN CUT TAX\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *SUNAK: NOW THAT INFLATION HAS HALVED, WE CAN BEGIN TO CUT TAX\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.788552"
+  },
+  {
+    "prompt_id": "c69ba1d73df35ceb",
+    "text": "*CARNEY AGREED TO STAY DESPITE `PERSONAL' PRESSURES: HAMMOND",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *HAMMOND SAID TO HAVE URGED CARNEY TO REMAIN TO 2021: TELEGRAPH\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *CARNEY AGREED TO STAY DESPITE `PERSONAL' PRESSURES: HAMMOND\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.810902"
+  },
+  {
+    "prompt_id": "131da85ec41673a2",
+    "text": "*UK CHANCELLOR REEVES CONFIRMS 2% INFLATION TARGET FOR BOE",
+    "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Similar Labeled Examples\nHere are similar labeled examples from the knowledge base for reference:\n\n\n---\n**Example 1:**\nText: *REEVES MAINTAINS BOE INFLATION TARGET AT 2%\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 2:**\nText: *REEVES MAINTAINS BOE INFLATION TARGET AT 2%\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 3:**\nText: *REEVES MAINTAINS BOE INFLATION TARGET AT 2%\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 4:**\nText: *REEVES MAINTAINS BOE INFLATION TARGET AT 2%\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n**Example 5:**\nText: *REEVES MAINTAINS BOE INFLATION TARGET AT 2%\n\nLabel: 0\n\n(Human-labeled)\n\n\n\n\n\n---\n\n\n## Task\nInput text: *UK CHANCELLOR REEVES CONFIRMS 2% INFLATION TARGET FOR BOE\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen, referencing patterns from the similar examples if relevant\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nConsider the patterns you see in the similar examples above, but make your own independent judgment about the input text.\n",
+    "template_source": "<template>",
+    "examples_count": 5,
+    "ruleset": {
+      "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+      "rules": [
+        {
+          "label": "-1",
+          "description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+          "indicators": [
+            "mild respect for fed independence",
+            "mild affirmation",
+            "confident in fed",
+            "respect fed independence",
+            "fed is independent",
+            "fed picks will have broad support",
+            "fed is independent operation",
+            "refuses comment on fed rates"
+          ]
+        },
+        {
+          "label": "-2",
+          "description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+          "indicators": [
+            "respect independence",
+            "support independence",
+            "independence is important",
+            "warn against undermining independence",
+            "trusts the fed",
+            "respects fed independence",
+            "strong believer in fed independence",
+            "govt commitment to boe independence"
+          ]
+        },
+        {
+          "label": "-3",
+          "description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+          "indicators": [
+            "strongly support independence",
+            "crucial importance of independence",
+            "refusal to comment on monetary policy out of respect",
+            "strong praise for central bank leadership"
+          ]
+        },
+        {
+          "label": "-9999",
+          "description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+          "indicators": [
+            "fed nominee news",
+            "political appointments",
+            "general economic news unrelated to fed",
+            "comments on individuals unrelated to fed independence",
+            "statements about other economic topics without fed reference"
+          ]
+        },
+        {
+          "label": "0",
+          "description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+          "indicators": [
+            "neutral report",
+            "policy announcement",
+            "economic condition",
+            "inflation data",
+            "interest rates unchanged",
+            "fed path",
+            "fed making decisions",
+            "government announcements",
+            "fed tools to fight inflation",
+            "fed independent operation",
+            "fed focused on inflation",
+            "fed on path to soft landing"
+          ]
+        },
+        {
+          "label": "1",
+          "description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+          "indicators": [
+            "mild criticism",
+            "calls for rate cuts",
+            "displeased with fed",
+            "fed mistakes",
+            "fed should lower rates",
+            "fed too slow",
+            "fed not doing enough",
+            "fed rate too high",
+            "rate cut needed",
+            "fed should ease",
+            "mild dissatisfaction"
+          ]
+        },
+        {
+          "label": "2",
+          "description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+          "indicators": [
+            "strong criticism",
+            "blame fed",
+            "fed mistakes",
+            "fed failures",
+            "fed rate hikes hurting economy",
+            "fed should cut rates now",
+            "fed not acting",
+            "fed derelict in duties",
+            "fed putting us at disadvantage"
+          ]
+        },
+        {
+          "label": "3",
+          "description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+          "indicators": [
+            "threats to remove fed officials",
+            "harsh insults to fed chair",
+            "explicit attacks on independence",
+            "fed is fool",
+            "fed must be replaced",
+            "fed leadership failure"
+          ]
+        }
+      ],
+      "general_guidelines": [
+        "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+        "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+        "Neutral factual reporting without opinion should be labeled 0.",
+        "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+        "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+        "When in doubt, consider the presence of indicators and the context of the statement."
+      ]
+    },
+    "timestamp": "2025-06-10T23:31:08.832628"
+  }
+]

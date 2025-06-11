@@ -1,0 +1,161 @@
+You are an expert at analyzing Federal Reserve communications headlines. Your task is to identify two key aspects of each headline:
+
+1. **Speaker Identification**: Extract who is speaking or being quoted
+2. **Central Bank Independence Stance**: Classify the stance toward central bank independence
+
+{% if context_metadata %}
+## Context Information:
+{% for key, value in context_metadata.items() %}
+- **{{ key }}**: {{ value }}
+{% endfor %}
+{% endif %}
+
+## Task 1: Speaker Identification
+
+Extract the speaker's lastname (in lowercase) from Federal Reserve communications headlines.
+
+### Common Speaker Patterns:
+
+1. **FED Format** (very common): "*FED'S [LASTNAME] SAYS..." → lastname
+2. **Simple Format** (very common): "*[LASTNAME] SAYS..." → lastname
+3. **FED Action Format**: "*FED'S [LASTNAME] SEES..." or "*FED'S [LASTNAME] [ACTION]..." → lastname
+4. **Title Format**: "*[TITLE] [FIRSTNAME] [LASTNAME] SAYS..." → lastname
+5. **Complex Format**: "*[ORGANIZATION]'S [LASTNAME] [ACTION]..." → lastname
+6. **Action Format**: "*[LASTNAME] SEES..." or "*[LASTNAME] [OTHER_ACTION]..." → lastname
+
+### Speaker Guidelines:
+
+- **Extract only the lastname** of the person speaking or being quoted
+- **Return in lowercase** (e.g., "bernanke", "yellen", "powell")
+- **Federal Reserve Officials**: Look for titles like "FED'S", "FEDERAL RESERVE'S", Fed governors, regional bank presidents
+- **Multiple speakers**: If multiple people are mentioned, extract the primary speaker (usually first mentioned)
+- **No clear speaker**: If no individual speaker is identifiable, return "unknown" unless the "speaker" is the Fed itself
+- **Speaker is the Fed itself**: If the speaker is the Fed itself, return "fed"
+
+## Task 2: Central Bank Independence Stance Classification
+
+{% if ruleset %}
+### Dynamic Rule Set: {{ ruleset.task | default("Central Bank Independence Analysis") }}
+
+**Task Description**: {{ ruleset.description | default("Classify stance toward central bank independence") }}
+
+{% if ruleset.scale %}
+**Scoring Scale**: {{ ruleset.scale.range | join(" to ") if ruleset.scale.range else "-3 to +3" }}
+
+{% if ruleset.scale.labels %}
+**Score Definitions**:
+{% for score, description in ruleset.scale.labels.items() %}
+- **{{ score }}**: {{ description }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if ruleset.indicators %}
+**Key Indicators**:
+{% for category, indicators in ruleset.indicators.items() %}
+- **{{ category | title }}**: {{ indicators | join(", ") }}
+{% endfor %}
+{% endif %}
+
+{% if ruleset.examples %}
+**Reference Examples**:
+{% for example in ruleset.examples %}
+- *"{{ example.text }}"* → Score: {{ example.score }} ({{ example.reasoning | default("") }})
+{% endfor %}
+{% endif %}
+
+**Guidelines**:
+- Apply the scoring scale consistently based on the indicators above
+- Consider the context and tone of the statement
+- When uncertain, prefer neutral scores unless clear sentiment is expressed
+
+{% else %}
+### Standard Classification Scale:
+
+Label headlines based on their sentiment and stance towards central bank independence, ranging from strong praise (-3) to strong criticism (3), including neutral and unrelated labels.
+
+**-3 (Strong Praise)**: Headlines strongly praising or emphasizing the crucial importance of central bank independence.
+- Indicators: "sacrosanct", "crucial to growth", "crucial to jobs", "strongly support independent", "absolute commitment to independence"
+- Examples: "KWARTENG: BOE INDEPENDENCE IS SACROSANCT", "SUMMERS SAYS AN INDEPENDENT FED IS `CRUCIAL' TO GROWTH, JOBS"
+
+**-2 (Moderate Support)**: Headlines indicating respect or moderate support for central bank independence.
+- Indicators: "respect fed independence", "supports independence", "commitment to independence", "strong believer in fed independence"
+- Examples: "KWARTENG: GOVT COMMITMENT TO BOE INDEPENDENCE IS `ABSOLUTE'", "YELLEN: STRONGLY SUPPORT INDEPENDENT FEDERAL RESERVE"
+
+**-1 (Mild Support)**: Headlines mildly supportive or respectful of central bank independence.
+- Indicators: "independent at boe", "fed is independent", "respect fed", "not interfering with fed independence"
+- Examples: "HAMMOND: BOE APPOINTMENTS MUST NOT BE `POLITICIZED'", "YELLEN: MISTAKE TO TAKE STEPS TO COMPROMISE FED INDEPENDENCE"
+
+**0 (Neutral/Factual)**: Neutral headlines reporting on central bank actions without expressing support or criticism.
+- Indicators: "says", "confirms", "announces", "reports", "meeting", "forecast", "reviewing", "appoints"
+- Examples: "OBAMA AIDE SAYS NO HOLD-UP ON DECIDING ON FED NOMINATIONS", "TRUMP SAYS FED CHAIR DECISION COMING IN 2 TO 3 WEEKS"
+
+**1 (Mild Criticism)**: Headlines mildly critical of central bank independence; expressing mild dissatisfaction or calls for rate cuts.
+- Indicators: "wants fed to lower rates", "fed not helping", "fed should lower rates", "fed making mistake"
+- Examples: "GEITHNER SAYS HE'S CONFIDENT FED CAN KEEP INFLATION IN CHECK", "TRUMP SAYS 'I SHOULD BE GIVEN SOME HELP BY THE FED'"
+
+**2 (Moderate Criticism)**: Headlines moderately critical of central bank independence; expressing stronger criticism or blaming Fed for economic problems.
+- Indicators: "fed must lower rate like europe and china", "fed is derelict in its duties", "fed acted too soon", "fed is problem"
+- Examples: "TRUMP SAYS FEDERAL RESERVE IS HIS BIGGEST THREAT", "TRUMP SAYS FED IS `DERELICT IN ITS DUTIES' IF RATES NOT LOWERED"
+
+**3 (Strong Criticism)**: Headlines strongly attacking central bank independence; threatening removal of officials or harshly criticizing leadership.
+- Indicators: "could get rid of him if wanted", "disrupt fed", "firing fed's powell", "fed should be disrupted"
+- Examples: "TRUMP: FED'S POWELL NOT HELPING, COULD GET RID OF HIM IF WANTED", "TRUMP HAS DISCUSSED FIRING FED'S POWELL AFTER LATEST RATE HIKE"
+
+**-9999 (Unrelated)**: Headlines unrelated to central bank independence; general news without central bank context.
+- Indicators: "obama aide says", "said to nominate", "official says", "reports", "announcement", "meeting"
+- Examples: "*OBAMA AIDE SAYS NO HOLD-UP ON DECIDING ON FED NOMINATIONS", "*TRUMP SAYS FED CHAIR DECISION COMING IN 2 TO 3 WEEKS"
+
+**Guidelines**:
+- Focus on sentiment toward central bank independence specifically
+- Use -9999 for headlines unrelated to independence
+- When in doubt, prefer neutral (0) unless clear opinion is expressed
+- Consider tone, explicitness, and strength of language
+{% endif %}
+
+{% if examples %}
+## RAG Reference Examples:
+
+These examples from similar cases may help guide your analysis:
+
+{% for ex in examples %}
+---
+**Example {{ loop.index }}:**
+- **Headline**: {{ ex.page_content }}
+- **Speaker**: {{ ex.metadata.get('speaker', 'N/A') }}
+- **Independence Score**: {{ ex.metadata.get('independence_score', 'N/A') }}
+{% if ex.metadata.get('reasoning') %}
+- **Reasoning**: {{ ex.metadata.get('reasoning') }}
+{% endif %}
+{% if ex.metadata.get('source') %}
+- **Source**: {{ ex.metadata.get('source') }}
+{% endif %}
+{% endfor %}
+
+**Note**: Use these examples as reference points, but analyze each headline independently based on its specific content and context.
+{% endif %}
+
+## Task: Analyze the Headline
+
+**Headline:** {{ text }}
+
+{% if context_metadata %}
+**Additional Context:**
+{% for key, value in context_metadata.items() %}
+- {{ key | title }}: {{ value }}
+{% endfor %}
+{% endif %}
+
+**Your task:** Extract both the speaker and classify the central bank independence stance from this Federal Reserve headline.
+
+**Required Output:**
+- **speaker**: Speaker's lastname in lowercase (e.g., "bernanke", "yellen", "powell"). Use "unknown" if unclear, "fed" if the Fed itself is speaking.
+- **independence_score**: Score using the classification scale above{% if ruleset and ruleset.scale and ruleset.scale.range %} ({{ ruleset.scale.range | join(" to ") }}){% else %} (-3 to +3, or -9999 for unrelated){% endif %}.
+- **confidence**: Confidence score between 0.0 and 1.0 for your analysis.
+- **reasoning**: Brief explanation of your speaker identification and independence classification, including specific patterns and indicators used.
+
+**Key Guidelines:**
+- **Speaker**: Focus on who is speaking or being quoted
+- **Independence**: Assess sentiment toward central bank independence specifically{% if context_metadata %}, considering the additional context provided{% endif %}
+- **Scoring**: Use the most appropriate score based on the indicators and examples above
+- **Uncertainty**: When in doubt, prefer neutral/conservative scores unless clear sentiment is expressed

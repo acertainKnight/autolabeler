@@ -84,3 +84,20 @@ Generate an updated ruleset that:
 5. Preserves the practical usability for annotators
 
 Focus on making targeted improvements rather than wholesale changes unless clearly justified by the new evidence.
+
+## Response Format
+Provide your response as a complete RuleUpdateResult containing:
+
+1. **updated_ruleset**: A complete RuleSet with all rules (modified, added, and preserved)
+2. **changes_made**: List of specific changes you made and why
+3. **new_rules_added**: Count of new rules added
+4. **rules_modified**: Count of existing rules that were modified
+5. **rules_removed**: Count of rules that were removed
+6. **update_metadata**: Object containing:
+   - **batch_processed**: true
+   - **refinement_approach**: "iterative_batch_refinement"
+   - **model_used**: "{{ model_used | default('gemini-pro') }}"
+   - **processing_timestamp**: Current timestamp
+   - **examples_processed**: {{ batch_examples|length if batch_examples is defined else 0 }}
+
+Focus on incremental improvements that enhance the ruleset's accuracy and coverage while preserving its core structure and utility.

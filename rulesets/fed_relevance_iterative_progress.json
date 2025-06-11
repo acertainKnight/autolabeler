@@ -1,0 +1,149 @@
+{
+  "ruleset": {
+    "dataset_name": "fed_relevance",
+    "task_description": "Label headlines related to Federal Reserve monetary policy decisions, outlook, impacts, and related statements.",
+    "label_categories": [
+      "1",
+      "0"
+    ],
+    "rules": [
+      {
+        "rule_id": "rule_1",
+        "label": "1",
+        "pattern_description": "Headlines discussing Federal Reserve monetary policy decisions, outlook, impacts, interest rate changes, inflation targets, economic outlook, employment, inflation data, balance sheet actions, asset purchases, tapering, and related policy tools, including explicit statements by Federal Reserve officials on economic conditions affecting monetary policy.",
+        "conditions": [
+          "Mentions Federal Reserve or Fed officials in the context of monetary policy decisions or outlook.",
+          "Discusses interest rate changes, rate hikes, rate cuts, or rate projections.",
+          "Mentions inflation levels, inflation targets, inflation expectations, or inflation risks.",
+          "References economic growth outlook, employment data, labor market conditions, or job reports relevant to monetary policy.",
+          "Mentions balance sheet policies such as asset purchases, balance sheet rolloff, quantitative easing (QE), tapering, or related tools.",
+          "Discusses credit conditions, lending, liquidity, or financial stability as related to monetary policy.",
+          "Mentions Federal Reserve communications or forward guidance on policy.",
+          "Includes statements about economic risks, recession, or recovery in the context of Fed policy.",
+          "References fiscal policy only when linked to Federal Reserve's monetary stance or impact.",
+          "Mentions Federal Reserve's dual mandate or policy goals.",
+          "Includes statements on regulatory or supervisory actions only if linked to monetary policy impact."
+        ],
+        "indicators": [
+          "Fed rate hike",
+          "interest rate cut",
+          "inflation target",
+          "balance sheet rolloff",
+          "quantitative easing",
+          "tapering",
+          "Federal Reserve officials discuss inflation",
+          "employment report",
+          "monetary policy tools",
+          "FOMC statements",
+          "Fed policy outlook",
+          "economic growth forecasts related to Fed policy",
+          "Fed's stance on inflation or employment",
+          "Fed communications on policy",
+          "liquidity conditions related to Fed actions"
+        ],
+        "examples": [
+          "*MESTER: COSTS OF UNDERSHOOTING OUTWEIGH COSTS OF DOING TOO MUCH",
+          "*KAPLAN: ZERO RATES COULD ERODE MONETARY POLICY EFFECTIVENESS",
+          "*BULLARD: CAN HAVE V-SHAPED RECOVERY IF GET TESTING RIGHT",
+          "*POWELL: FOMC HAS THE TOOLS TO LOWER INFLATION",
+          "*FED'S HARKER SAYS HE DID NOT FAVOR LAST TWO FED RATE CUTS",
+          "*BULLARD: FED NEEDS TO GET POLICY TO NEUTRAL, FASTER IS BETTER",
+          "*MESTER: DON'T FORESEE WANTING TO USE NEGATIVE RATES IN U.S.",
+          "*BULLARD SAYS GETTING MORE CONCERNED FED MAY MAKE POLICY MISTAKE",
+          "*PLOSSER SAYS HE OPPOSED TO FOCUS ON DATES FOR END TO QE",
+          "*POWELL: WILL USE TOOLS TO PREVENT INFLATION GETTING ENTRENCHED"
+        ],
+        "counter_examples": [
+          "*POWELL EXPECTS FED PAPER ON DIGITAL CURRENCIES IN COMING WEEKS",
+          "*SHOULD BE DIFFERENT RULES FOR DIFFERENT SIZED BANKS: TARULLO",
+          "*TIMING OF TAX BILL IMPACTED BANKS' CAPITAL PLANNING: POWELL",
+          "*FEDERAL RESERVE'S BERNANKE MET WITH WANG QISHAN, XINHUA SAYS",
+          "*WHITE HOUSE RELEASES STATEMENT ON OBAMA, BERNANKE MEETING TODAY"
+        ],
+        "confidence": 0.95,
+        "frequency": 600,
+        "edge_cases": [
+          "Statements about Federal Reserve officials that are only procedural or administrative without policy context should not be labeled as 1.",
+          "Discussions of fiscal policy only when clearly linked to Fed's monetary stance are labeled as 1; otherwise 0.",
+          "Mentions of digital currencies or technological initiatives not directly tied to monetary policy are labeled 0."
+        ],
+        "creation_timestamp": "2024-06-01T12:00:00Z",
+        "last_updated": "2024-06-02T12:00:00Z",
+        "source_data_hash": "hash750examplebatchv1"
+      },
+      {
+        "rule_id": "rule_2",
+        "label": "0",
+        "pattern_description": "Headlines mentioning Federal Reserve officials, events, or actions that do not discuss monetary policy decisions, outlook, or impacts. Includes procedural, administrative, personal, regulatory, or unrelated economic topics and other non-policy related Fed mentions.",
+        "conditions": [
+          "Mentions Federal Reserve or Fed officials in context unrelated to monetary policy decisions or outlook.",
+          "Discusses regulatory, supervisory, or enforcement actions without monetary policy context.",
+          "Mentions Fed events, personnel changes, meetings, or procedural matters without policy content.",
+          "Includes references to digital currency initiatives, financial technology, or payments systems without monetary policy impact.",
+          "Mentions fiscal policy or government actions without direct linkage to Fed monetary policy.",
+          "Includes references to statements or events involving Fed officials that are personal, ceremonial, or unrelated to policy."
+        ],
+        "indicators": [
+          "Fed digital currency",
+          "Fed personnel changes",
+          "Fed meetings procedural",
+          "Regulatory enforcement by Fed",
+          "Fed event or testimony without policy mention",
+          "Government or White House statements about Fed personnel",
+          "Financial technology initiatives",
+          "Fed oversight or governance unrelated to policy"
+        ],
+        "examples": [
+          "*POWELL EXPECTS FED PAPER ON DIGITAL CURRENCIES IN COMING WEEKS",
+          "*SHOULD BE DIFFERENT RULES FOR DIFFERENT SIZED BANKS: TARULLO",
+          "*TIMING OF TAX BILL IMPACTED BANKS' CAPITAL PLANNING: POWELL",
+          "*FEDERAL RESERVE'S BERNANKE MET WITH WANG QISHAN, XINHUA SAYS",
+          "*WHITE HOUSE RELEASES STATEMENT ON OBAMA, BERNANKE MEETING TODAY"
+        ],
+        "counter_examples": [
+          "*BULLARD: FED NEEDS TO GET POLICY TO NEUTRAL, FASTER IS BETTER",
+          "*POWELL: WILL USE TOOLS TO PREVENT INFLATION GETTING ENTRENCHED",
+          "*PLOSSER SAYS HE OPPOSED TO FOCUS ON DATES FOR END TO QE"
+        ],
+        "confidence": 0.95,
+        "frequency": 150,
+        "edge_cases": [
+          "References to Fed papers or research not directly related to monetary policy are labeled 0.",
+          "Mentions of Fed officials' meetings or communications without policy content are labeled 0.",
+          "Discussions of fiscal policy or external government actions are labeled 0 unless clearly linked to Fed monetary policy."
+        ],
+        "creation_timestamp": "2024-06-01T12:00:00Z",
+        "last_updated": "2024-06-02T12:00:00Z",
+        "source_data_hash": "hash750examplebatchv1"
+      }
+    ],
+    "general_guidelines": [
+      "Label '1' for headlines that directly relate to Federal Reserve monetary policy decisions, outlook, or impacts.",
+      "Label '0' for headlines about Federal Reserve officials or events without monetary policy content.",
+      "Consider the context of Fed officials' statements to determine if they pertain to monetary policy.",
+      "Exclude headlines focused on Fed administrative, procedural, or regulatory actions without monetary policy implications.",
+      "When in doubt, prioritize the presence of economic indicators or policy tools mentioned in the headline.",
+      "Avoid labeling as '1' headlines that only mention digital currency research or non-policy Fed papers.",
+      "Include fiscal policy mentions only when they clearly intersect with Fed monetary policy.",
+      "Be mindful of indirect references to monetary policy through related economic or financial terms."
+    ],
+    "disambiguation_rules": [
+      "If a headline mentions Federal Reserve officials and economic topics but lacks explicit policy decisions or outlook, label as '0'.",
+      "Headlines about Federal Reserve research or papers without direct policy impact should be labeled '0'.",
+      "Statements about Federal Reserve tools or policy stance must be linked to inflation, employment, or economic growth to be labeled '1'.",
+      "Mentions of fiscal policy or government actions should be labeled '1' only if explicitly connected to Fed monetary policy."
+    ],
+    "quality_checks": [
+      "Verify that labels '1' are only assigned when monetary policy context is clear.",
+      "Ensure that labels '0' are not assigned to headlines with implicit monetary policy content.",
+      "Check for consistency in labeling across similar headlines mentioning Fed officials.",
+      "Confirm that edge cases are handled consistently according to guidelines."
+    ],
+    "version": "1.0.6",
+    "creation_timestamp": "2025-06-10T14:04:59.974191",
+    "last_updated": "2025-06-10T14:46:12.780828",
+    "statistics": null
+  },
+  "batch_num": 8,
+  "last_updated": "2025-06-10T14:46:12.781033"
+}

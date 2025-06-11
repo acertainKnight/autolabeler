@@ -1,0 +1,62 @@
+{
+  "dataset_name": "test_debug_prompts",
+  "timestamp": "2025-06-10T23:08:49.976421",
+  "prompts_count": 5,
+  "prompts": [
+    {
+      "prompt_id": "7fa4eef43b9a297c",
+      "text": "This product is absolutely amazing!",
+      "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: This product is absolutely amazing!\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+      "template_source": "<template>",
+      "examples_count": 0,
+      "ruleset": {
+        "example_rule": "Rule for text 1"
+      },
+      "timestamp": "2025-06-10T23:08:49.959413"
+    },
+    {
+      "prompt_id": "ad0cb33e769e1bdd",
+      "text": "Terrible experience, would not recommend.",
+      "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: Terrible experience, would not recommend.\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+      "template_source": "<template>",
+      "examples_count": 0,
+      "ruleset": {
+        "example_rule": "Rule for text 2"
+      },
+      "timestamp": "2025-06-10T23:08:49.962837"
+    },
+    {
+      "prompt_id": "8d38608271eca311",
+      "text": "It's okay, nothing special.",
+      "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: It's okay, nothing special.\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+      "template_source": "<template>",
+      "examples_count": 0,
+      "ruleset": {
+        "example_rule": "Rule for text 3"
+      },
+      "timestamp": "2025-06-10T23:08:49.967614"
+    },
+    {
+      "prompt_id": "a0b02bd9fe92f922",
+      "text": "Best purchase I've ever made!",
+      "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: Best purchase I've ever made!\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+      "template_source": "<template>",
+      "examples_count": 0,
+      "ruleset": {
+        "example_rule": "Rule for text 4"
+      },
+      "timestamp": "2025-06-10T23:08:49.972248"
+    },
+    {
+      "prompt_id": "25dce83e64bfaa89",
+      "text": "Complete waste of money.",
+      "rendered_prompt": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: Complete waste of money.\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+      "template_source": "<template>",
+      "examples_count": 0,
+      "ruleset": {
+        "example_rule": "Rule for text 5"
+      },
+      "timestamp": "2025-06-10T23:08:49.976097"
+    }
+  ]
+}

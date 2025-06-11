@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "openrouter_api_key": "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",
+    "llm_model": "openai/gpt-4.1-mini",
+    "embedding_model": "all-MiniLM-L6-v2",
+    "max_examples_per_query": 10,
+    "similarity_threshold": 0.8,
+    "knowledge_base_dir": "knowledge_bases"
+  },
+  "models": [
+    {
+      "model_name": "openai/gpt-4.1-mini",
+      "provider": "openrouter",
+      "temperature": 0.3,
+      "seed": 42,
+      "description": "rule generation",
+      "tags": ["openai", "rule-generation"],
+      "custom_params": {
+        "top_p": 0.95,
+        "max_tokens": 4096
+      }
+    }
+  ]
+}

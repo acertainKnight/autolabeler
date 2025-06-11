@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class LabelResponse(BaseModel):
@@ -12,6 +12,8 @@ class LabelResponse(BaseModel):
     Contains the predicted label, confidence score, and optional metadata
     about the labeling decision process, including context awareness.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     label: str = Field(description="The predicted label for the text")
     confidence: float = Field(
@@ -28,21 +30,21 @@ class LabelResponse(BaseModel):
         default=None,
         description="How the provided context influenced the labeling decision"
     )
-    similar_examples_used: list[str] | None = Field(
+    similar_examples_used: list[str]| str | None = Field(
         default=None,
         description="References to similar examples that influenced the decision"
     )
-    metadata: dict[str, Any] | None = Field(
-        default=None,
-        description="Additional metadata about the labeling decision"
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the labeling decision as string key-value pairs"
     )
-    uncertainty_factors: list[str] | None = Field(
-        default=None,
+    uncertainty_factors: list[str] = Field(
+        default_factory=list,
         description="Factors that contributed to uncertainty in the labeling decision"
     )
-    alternative_labels: list[dict[str, Any]] | None = Field(
-        default=None,
-        description="Alternative labels considered with their confidence scores"
+    alternative_labels: list[str] = Field(
+        default_factory=list,
+        description="Alternative labels considered during the decision process"
     )
 
 
@@ -52,6 +54,8 @@ class SyntheticExample(BaseModel):
 
     Contains the generated text, target label, and metadata about the generation process.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     text: str = Field(description="The synthetically generated text")
     label: str = Field(description="The target label for this synthetic text")
@@ -78,6 +82,8 @@ class SyntheticBatch(BaseModel):
     Contains multiple synthetic examples and batch-level metadata.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     examples: list[SyntheticExample] = Field(description="List of generated synthetic examples")
     generation_strategy: str = Field(description="The strategy used for this batch generation")
     source_patterns: list[str] | None = Field(
@@ -103,6 +109,8 @@ class MultiFieldLabelResponse(BaseModel):
     Supports extracting multiple pieces of information from a single text
     with individual confidence scores for each field.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     speaker: str | None = Field(
         default=None,
@@ -154,9 +162,9 @@ class MultiFieldLabelResponse(BaseModel):
         description="How context from past headlines influenced the extraction"
     )
 
-    extraction_metadata: dict[str, Any] | None = Field(
-        default=None,
-        description="Additional metadata about the extraction process"
+    extraction_metadata: dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional metadata about the extraction process as string key-value pairs"
     )
 
 
@@ -166,6 +174,8 @@ class LabelingRule(BaseModel):
 
     Contains patterns, conditions, and examples that define when to apply specific labels.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     rule_id: str = Field(description="Unique identifier for this rule")
     label: str = Field(description="The label this rule applies to")
@@ -191,8 +201,8 @@ class LabelingRule(BaseModel):
         default=None,
         description="Known edge cases or exceptions to this rule"
     )
-    creation_timestamp: str = Field(description="When this rule was created")
-    last_updated: str = Field(description="When this rule was last updated")
+    creation_timestamp: str | None = Field(default=None, description="When this rule was created")
+    last_updated: str | None = Field(default=None, description="When this rule was last updated")
     source_data_hash: str | None = Field(
         default=None,
         description="Hash of source data used to create this rule"
@@ -205,6 +215,8 @@ class RuleSet(BaseModel):
 
     Represents the complete annotation guidelines derived from training data.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     dataset_name: str = Field(description="Name of the dataset this ruleset applies to")
     task_description: str = Field(description="Description of the labeling task")
@@ -235,9 +247,11 @@ class RuleGenerationResult(BaseModel):
     Contains the generated ruleset along with metadata about the generation process.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     ruleset: RuleSet = Field(description="The generated labeling ruleset")
-    generation_metadata: dict[str, Any] = Field(description="Metadata about the rule generation process")
-    data_analysis: dict[str, Any] = Field(description="Analysis of the input data used for rule generation")
+    generation_metadata: dict[str, Any] | None = Field(default=None, description="Metadata about the rule generation process")
+    data_analysis: dict[str, Any] | None = Field(default=None, description="Analysis of the input data used for rule generation")
     rule_conflicts: list[str] | None = Field(
         default=None,
         description="Identified conflicts or inconsistencies between rules"
@@ -258,6 +272,8 @@ class RuleUpdateResult(BaseModel):
 
     Contains information about what changed and the updated ruleset.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     updated_ruleset: RuleSet = Field(description="The updated labeling ruleset")
     changes_made: list[str] = Field(description="List of changes made to the ruleset")

@@ -1,0 +1,32 @@
+{
+  "project_name": "fed_speaker_extraction",
+  "data_context": {
+    "unlabeled_data": "datasets/unlabeled_headlines.csv"
+  },
+  "tasks": [
+    {
+      "name": "LabelWithCustomPrompt",
+      "type": "label",
+      "params": {
+        "input_df_key": "unlabeled_data",
+        "output_df_key": "labeled_data",
+        "text_column": "headline",
+        "labeling_config": {
+          "model_name": "openai/gpt-4o-mini",
+          "temperature": 0.1,
+          "max_tokens": 50,
+          "use_rag": false
+        },
+        "template_path": "templates/speaker_extraction_prompt.j2"
+      }
+    },
+    {
+      "name": "SaveResults",
+      "type": "save_data",
+      "params": {
+        "input_df_key": "labeled_data",
+        "output_file": "results/speaker_extraction_output.csv"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1141 @@
+{
+  "971bbe529df4d6c5": {
+    "prompt_id": "971bbe529df4d6c5",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: obama\n\n\n\nCapturetime: 2009-01-20T12:26:33.046+00:00\n\n\n\n\n\n## Task\nInput text: *GALLUP SAYS OBAMA HAS 78% APPROVAL RATING GOING INTO INAUGURAL\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GALLUP SAYS OBAMA HAS 78% APPROVAL RATING GOING INTO INAUGURAL",
+      "context_metadata": {
+        "flagged_people_keys": "obama",
+        "capturetime": "2009-01-20T12:26:33.046+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:25.898518",
+    "usage_count": 6,
+    "last_used": "2025-06-10T17:59:29.726175",
+    "successful_predictions": 4,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "06fe6aea23e941b4": {
+    "prompt_id": "06fe6aea23e941b4",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: obama\n\n\n\nCapturetime: 2009-01-20T12:26:43.756+00:00\n\n\n\n\n\n## Task\nInput text: *GALLUP EDITOR-IN-CHIEF FRANK NEWPORT SPEAKS ON BLOOMBERG RADIO\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GALLUP EDITOR-IN-CHIEF FRANK NEWPORT SPEAKS ON BLOOMBERG RADIO",
+      "context_metadata": {
+        "flagged_people_keys": "obama",
+        "capturetime": "2009-01-20T12:26:43.756+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:27.085811",
+    "usage_count": 6,
+    "last_used": "2025-06-10T17:59:33.385361",
+    "successful_predictions": 2,
+    "failed_predictions": 3,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "a0160c83cc174363": {
+    "prompt_id": "a0160c83cc174363",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: obama\n\n\n\nCapturetime: 2009-01-23T00:45:30.966+00:00\n\n\n\n\n\n## Task\nInput text: *OBAMA NAMES RICHARD BESSER TO HEAD CDC, REUTERS SAYS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*OBAMA NAMES RICHARD BESSER TO HEAD CDC, REUTERS SAYS",
+      "context_metadata": {
+        "flagged_people_keys": "obama",
+        "capturetime": "2009-01-23T00:45:30.966+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:28.969593",
+    "usage_count": 6,
+    "last_used": "2025-06-10T17:59:35.700809",
+    "successful_predictions": 4,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "35b6b7043b5970f5": {
+    "prompt_id": "35b6b7043b5970f5",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:02:16.296+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS FINANCIAL SYSTEM HAS `VERY SERIOUS' PROBLEMS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS FINANCIAL SYSTEM HAS `VERY SERIOUS' PROBLEMS",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:02:16.296+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:29.991339",
+    "usage_count": 6,
+    "last_used": "2025-06-10T17:59:37.847874",
+    "successful_predictions": 3,
+    "failed_predictions": 2,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "ee61c68c6a5e7d27": {
+    "prompt_id": "ee61c68c6a5e7d27",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:02:16.445+00:00\n\n\n\n\n\n## Task\nInput text: *OBAMA ADVISER SUMMERS COMMENTS IN INTERVIEW ON `MEET THE PRESS'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*OBAMA ADVISER SUMMERS COMMENTS IN INTERVIEW ON `MEET THE PRESS'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:02:16.445+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:30.983603",
+    "usage_count": 5,
+    "last_used": "2025-06-10T17:59:37.875009",
+    "successful_predictions": 2,
+    "failed_predictions": 2,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "2afe93ef8ace45c2": {
+    "prompt_id": "2afe93ef8ace45c2",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:03:25.544+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS STIMULUS PLAN TO INVEST IN `BACKBONE' OF ECONOMY\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS STIMULUS PLAN TO INVEST IN `BACKBONE' OF ECONOMY",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:03:25.544+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:32.116849",
+    "usage_count": 4,
+    "last_used": "2025-06-10T17:57:58.492843",
+    "successful_predictions": 2,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "b5e7553db82d923d": {
+    "prompt_id": "b5e7553db82d923d",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:03:57.282+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA IS `PREPARED TO DO WHAT IS NECESSARY'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA IS `PREPARED TO DO WHAT IS NECESSARY'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:03:57.282+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:33.126681",
+    "usage_count": 4,
+    "last_used": "2025-06-10T17:58:00.446430",
+    "successful_predictions": 2,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "93f9ad68c739c98a": {
+    "prompt_id": "93f9ad68c739c98a",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:04:22.142+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA'S FISCAL STIMULUS PLAN IS `PROPERLY SIZED'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA'S FISCAL STIMULUS PLAN IS `PROPERLY SIZED'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:04:22.142+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:34.151010",
+    "usage_count": 4,
+    "last_used": "2025-06-10T17:58:02.475406",
+    "successful_predictions": 1,
+    "failed_predictions": 2,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "18fbbec9b5e5470c": {
+    "prompt_id": "18fbbec9b5e5470c",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:06:16.513+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS TAX CUTS IN STIMULUS PLAN TO HELP U.S. HOUSEHOLDS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS TAX CUTS IN STIMULUS PLAN TO HELP U.S. HOUSEHOLDS",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:06:16.513+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:53:35.153096",
+    "usage_count": 3,
+    "last_used": "2025-06-10T17:58:04.195048",
+    "successful_predictions": 2,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "f87ffe6171bc9f36": {
+    "prompt_id": "f87ffe6171bc9f36",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:07:48.563+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SEES THREE-QUARTERS OF STIMULUS SPENT WITHIN 18 MONTHS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SEES THREE-QUARTERS OF STIMULUS SPENT WITHIN 18 MONTHS",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:07:48.563+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:04.220920",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:05.869512",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "162ad0fcea6dfe20": {
+    "prompt_id": "162ad0fcea6dfe20",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:07:48.722+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS IS DIRECTOR OF OBAMA'S NATIONAL ECONOMIC COUNCIL\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS IS DIRECTOR OF OBAMA'S NATIONAL ECONOMIC COUNCIL",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:07:48.722+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:05.894279",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:07.945374",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "27ea2a952b5c29ab": {
+    "prompt_id": "27ea2a952b5c29ab",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:11:54.138+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS EXPIRING BUSH TAX CUTS SHOULD BE ALLOWED TO EXPIRE\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS EXPIRING BUSH TAX CUTS SHOULD BE ALLOWED TO EXPIRE",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:11:54.138+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:07.972917",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:09.633827",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "153e2cb4f1ee1989": {
+    "prompt_id": "153e2cb4f1ee1989",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:12:59.363+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS U.S. DEFICIT `TERRIBLE AS FAR AS THE EYE CAN SEE'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS U.S. DEFICIT `TERRIBLE AS FAR AS THE EYE CAN SEE'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:12:59.363+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:09.662486",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:12.803594",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "4411e4815c3998da": {
+    "prompt_id": "4411e4815c3998da",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:16:00.716+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA'S BANK PLAN `VERY DIFFERENT' THAN BUSH'S\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA'S BANK PLAN `VERY DIFFERENT' THAN BUSH'S",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:16:00.716+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:12.829462",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:14.655716",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "7ee191147998a5cf": {
+    "prompt_id": "7ee191147998a5cf",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:16:00.827+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS: GEITHNER TO LAY OUT APPROACH `SOON' AFTER CONFIRMATION\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS: GEITHNER TO LAY OUT APPROACH `SOON' AFTER CONFIRMATION",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:16:00.827+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:14.688161",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:17.045461",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "be28607385900e0e": {
+    "prompt_id": "be28607385900e0e",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:18:01.277+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS BANKING SYSTEM NEEDS MORE CAPITAL TO BOOST LENDING\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS BANKING SYSTEM NEEDS MORE CAPITAL TO BOOST LENDING",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:18:01.277+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:17.067878",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:20.117179",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "6f4b80ec602a7435": {
+    "prompt_id": "6f4b80ec602a7435",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:19:41.197+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS `NO DOUBT' U.S. ECONOMY'S `BEST DAYS ARE' AHEAD\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS `NO DOUBT' U.S. ECONOMY'S `BEST DAYS ARE' AHEAD",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:19:41.197+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:20.146134",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:21.786793",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "4a843728b1a6dcdc": {
+    "prompt_id": "4a843728b1a6dcdc",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:20:29.360+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS NEXT FEW MONTHS TO BE `VERY DIFFICULT'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS NEXT FEW MONTHS TO BE `VERY DIFFICULT'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:20:29.360+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:21.810491",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:24.582667",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "45732e0dbdc52df2": {
+    "prompt_id": "45732e0dbdc52df2",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-25T14:20:29.454+00:00\n\n\n\n\n\n## Task\nInput text: *SUMMERS SAYS ECONOMY'S SLUMP MAY BE LONGER THAN A FEW MONTHS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS ECONOMY'S SLUMP MAY BE LONGER THAN A FEW MONTHS",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-25T14:20:29.454+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:24.608088",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:30.103366",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "4227989adec60c03": {
+    "prompt_id": "4227989adec60c03",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-28T18:50:00.480+00:00\n\n\n\n\n\n## Task\nInput text: *GEITHNER SAYS GOAL IS TO PRESERVE PRIVATE BANKING SYSTEM\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GEITHNER SAYS GOAL IS TO PRESERVE PRIVATE BANKING SYSTEM",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-28T18:50:00.480+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:30.128558",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:32.108467",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "2e19aeb4f79eabe8": {
+    "prompt_id": "2e19aeb4f79eabe8",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-28T18:50:00.573+00:00\n\n\n\n\n\n## Task\nInput text: *TREASURY'S GEITHNER WAS ASKED ABOUT NATIONALIZING BANKS\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*TREASURY'S GEITHNER WAS ASKED ABOUT NATIONALIZING BANKS",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-28T18:50:00.573+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:32.133350",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:34.621149",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "294f0dc73205923d": {
+    "prompt_id": "294f0dc73205923d",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-28T18:50:00.684+00:00\n\n\n\n\n\n## Task\nInput text: *TREASURY'S GEITHNER COMMENTS AT TARP OVERSIGHT MEETING\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*TREASURY'S GEITHNER COMMENTS AT TARP OVERSIGHT MEETING",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-28T18:50:00.684+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:34.648196",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:36.789136",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "38aa8bbd0cc06dbe": {
+    "prompt_id": "38aa8bbd0cc06dbe",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-28T18:50:00.809+00:00\n\n\n\n\n\n## Task\nInput text: *GEITHNER SAYS `RANGE OF OPTIONS' UNDER REVIEW FOR BANK RESCUE\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GEITHNER SAYS `RANGE OF OPTIONS' UNDER REVIEW FOR BANK RESCUE",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-28T18:50:00.809+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:36.816591",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:38.640854",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "9210178394d03ef3": {
+    "prompt_id": "9210178394d03ef3",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: summers\n\n\n\nCapturetime: 2009-01-28T18:52:12.555+00:00\n\n\n\n\n\n## Task\nInput text: *GEITHNER SEES BANK RESCUE PLAN COMING `RELATIVELY SOON'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GEITHNER SEES BANK RESCUE PLAN COMING `RELATIVELY SOON'",
+      "context_metadata": {
+        "flagged_people_keys": "summers",
+        "capturetime": "2009-01-28T18:52:12.555+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:38.672164",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:41.363830",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "386a0767b7a558c0": {
+    "prompt_id": "386a0767b7a558c0",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: geithner\n\n\n\nCapturetime: 2009-02-05T20:50:00.704+00:00\n\n\n\n\n\n## Task\nInput text: *GEITHNER SAYS TALKS UNDER WAY FOR `COMPREHENSIVE REFORM'\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GEITHNER SAYS TALKS UNDER WAY FOR `COMPREHENSIVE REFORM'",
+      "context_metadata": {
+        "flagged_people_keys": "geithner",
+        "capturetime": "2009-02-05T20:50:00.704+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:41.397394",
+    "usage_count": 2,
+    "last_used": "2025-06-10T17:58:43.325047",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "2c4bc3997cf26a45": {
+    "prompt_id": "2c4bc3997cf26a45",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n## Context Information\n\n\n\n\n\n\nFlagged People Keys: geithner\n\n\n\nCapturetime: 2009-02-05T20:50:00.807+00:00\n\n\n\n\n\n## Task\nInput text: *GEITHNER SPEAKS IN MEETING OF FINANCIAL MARKETS WORKING GROUP\n\n\nConsider the provided context information when making your labeling decision. Pay special attention to:\n\n\n\n\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text given the context\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision, including how the context influenced your choice\n\n\nMake your best judgment about the input text within the given context.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GEITHNER SPEAKS IN MEETING OF FINANCIAL MARKETS WORKING GROUP",
+      "context_metadata": {
+        "flagged_people_keys": "geithner",
+        "capturetime": "2009-02-05T20:50:00.807+00:00"
+      }
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T17:58:43.348948",
+    "usage_count": 1,
+    "last_used": "2025-06-10T17:58:43.348956",
+    "successful_predictions": 0,
+    "failed_predictions": 0,
+    "avg_confidence": null,
+    "tags": [
+      "single_text",
+      "context_aware"
+    ]
+  },
+  "52583515dbfe72eb": {
+    "prompt_id": "52583515dbfe72eb",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *GALLUP SAYS OBAMA HAS 78% APPROVAL RATING GOING INTO INAUGURAL\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GALLUP SAYS OBAMA HAS 78% APPROVAL RATING GOING INTO INAUGURAL",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:07.929507",
+    "usage_count": 4,
+    "last_used": "2025-06-10T18:02:26.336530",
+    "successful_predictions": 2,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "1531c0830904b7c4": {
+    "prompt_id": "1531c0830904b7c4",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *GALLUP EDITOR-IN-CHIEF FRANK NEWPORT SPEAKS ON BLOOMBERG RADIO\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*GALLUP EDITOR-IN-CHIEF FRANK NEWPORT SPEAKS ON BLOOMBERG RADIO",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:10.258999",
+    "usage_count": 4,
+    "last_used": "2025-06-10T18:02:27.913434",
+    "successful_predictions": 2,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "a41e460ca48e64db": {
+    "prompt_id": "a41e460ca48e64db",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *OBAMA NAMES RICHARD BESSER TO HEAD CDC, REUTERS SAYS\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*OBAMA NAMES RICHARD BESSER TO HEAD CDC, REUTERS SAYS",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:13.197958",
+    "usage_count": 4,
+    "last_used": "2025-06-10T18:02:29.623200",
+    "successful_predictions": 2,
+    "failed_predictions": 1,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "36a1ea9ec6602da4": {
+    "prompt_id": "36a1ea9ec6602da4",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS FINANCIAL SYSTEM HAS `VERY SERIOUS' PROBLEMS\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS FINANCIAL SYSTEM HAS `VERY SERIOUS' PROBLEMS",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:15.757505",
+    "usage_count": 3,
+    "last_used": "2025-06-10T18:02:29.636648",
+    "successful_predictions": 2,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "dee667f52637cc65": {
+    "prompt_id": "dee667f52637cc65",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *OBAMA ADVISER SUMMERS COMMENTS IN INTERVIEW ON `MEET THE PRESS'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*OBAMA ADVISER SUMMERS COMMENTS IN INTERVIEW ON `MEET THE PRESS'",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:17.495459",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:18.980046",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "6d7f3b0c4dd09bc2": {
+    "prompt_id": "6d7f3b0c4dd09bc2",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS STIMULUS PLAN TO INVEST IN `BACKBONE' OF ECONOMY\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS STIMULUS PLAN TO INVEST IN `BACKBONE' OF ECONOMY",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:19.006412",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:22.261943",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "e2178cc6226ebf5e": {
+    "prompt_id": "e2178cc6226ebf5e",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA IS `PREPARED TO DO WHAT IS NECESSARY'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA IS `PREPARED TO DO WHAT IS NECESSARY'",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:22.290381",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:24.258190",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.9,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "0ceb4986f3736da3": {
+    "prompt_id": "0ceb4986f3736da3",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA'S FISCAL STIMULUS PLAN IS `PROPERLY SIZED'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA'S FISCAL STIMULUS PLAN IS `PROPERLY SIZED'",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:24.287191",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:26.035836",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "f9fe44c158abcfa1": {
+    "prompt_id": "f9fe44c158abcfa1",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS TAX CUTS IN STIMULUS PLAN TO HELP U.S. HOUSEHOLDS\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS TAX CUTS IN STIMULUS PLAN TO HELP U.S. HOUSEHOLDS",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:26.065531",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:29.944544",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "b1a6053d8a9be6be": {
+    "prompt_id": "b1a6053d8a9be6be",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SEES THREE-QUARTERS OF STIMULUS SPENT WITHIN 18 MONTHS\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SEES THREE-QUARTERS OF STIMULUS SPENT WITHIN 18 MONTHS",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:29.971820",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:31.753622",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "6968f47bbbb51690": {
+    "prompt_id": "6968f47bbbb51690",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS IS DIRECTOR OF OBAMA'S NATIONAL ECONOMIC COUNCIL\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS IS DIRECTOR OF OBAMA'S NATIONAL ECONOMIC COUNCIL",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:31.781295",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:33.382103",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "d335da536305884f": {
+    "prompt_id": "d335da536305884f",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS EXPIRING BUSH TAX CUTS SHOULD BE ALLOWED TO EXPIRE\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS EXPIRING BUSH TAX CUTS SHOULD BE ALLOWED TO EXPIRE",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:33.410444",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:35.174148",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "66580f92e97db2e9": {
+    "prompt_id": "66580f92e97db2e9",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS U.S. DEFICIT `TERRIBLE AS FAR AS THE EYE CAN SEE'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS U.S. DEFICIT `TERRIBLE AS FAR AS THE EYE CAN SEE'",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:35.202256",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:37.118476",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "2acea5204c43adb7": {
+    "prompt_id": "2acea5204c43adb7",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS OBAMA'S BANK PLAN `VERY DIFFERENT' THAN BUSH'S\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS OBAMA'S BANK PLAN `VERY DIFFERENT' THAN BUSH'S",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:37.146957",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:39.043937",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "c76da9de007f23a8": {
+    "prompt_id": "c76da9de007f23a8",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS: GEITHNER TO LAY OUT APPROACH `SOON' AFTER CONFIRMATION\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS: GEITHNER TO LAY OUT APPROACH `SOON' AFTER CONFIRMATION",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:39.071956",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:40.775106",
+    "successful_predictions": 0,
+    "failed_predictions": 1,
+    "avg_confidence": null,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "e3f88b381e44d371": {
+    "prompt_id": "e3f88b381e44d371",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS BANKING SYSTEM NEEDS MORE CAPITAL TO BOOST LENDING\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS BANKING SYSTEM NEEDS MORE CAPITAL TO BOOST LENDING",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:40.803295",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:42.489735",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "16bde82d9c9c4676": {
+    "prompt_id": "16bde82d9c9c4676",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS `NO DOUBT' U.S. ECONOMY'S `BEST DAYS ARE' AHEAD\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS `NO DOUBT' U.S. ECONOMY'S `BEST DAYS ARE' AHEAD",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:42.518276",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:44.692930",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.95,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "ff68c4c325a79142": {
+    "prompt_id": "ff68c4c325a79142",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS NEXT FEW MONTHS TO BE `VERY DIFFICULT'\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS NEXT FEW MONTHS TO BE `VERY DIFFICULT'",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:44.720910",
+    "usage_count": 2,
+    "last_used": "2025-06-10T18:01:47.105515",
+    "successful_predictions": 1,
+    "failed_predictions": 0,
+    "avg_confidence": 0.9,
+    "tags": [
+      "single_text"
+    ]
+  },
+  "e015d95c7fc51b96": {
+    "prompt_id": "e015d95c7fc51b96",
+    "prompt_text": "You are an expert automated labeling assistant. Your task is to analyze the input text and provide a structured response with an appropriate label and any relevant metadata.\n\n\n\n## Task\nInput text: *SUMMERS SAYS ECONOMY'S SLUMP MAY BE LONGER THAN A FEW MONTHS\n\n\nPlease provide your analysis with:\n1. **Label**: An appropriate label that best categorizes this text\n2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision\n3. **Reasoning**: Brief explanation of why this label was chosen\n4. **Metadata**: Any relevant metadata that supports your decision\n\n\nMake your best judgment about the input text.\n",
+    "template_source": "label_prompt.j2",
+    "dataset_name": "speaker_independence_enhanced",
+    "model_config_id": "gpt4.1_mini",
+    "model_name": "openrouter/openai/gpt-3.5-turbo",
+    "variables": {
+      "text": "*SUMMERS SAYS ECONOMY'S SLUMP MAY BE LONGER THAN A FEW MONTHS",
+      "context_metadata": null
+    },
+    "num_examples": 0,
+    "example_sources": [],
+    "created_at": "2025-06-10T18:01:47.134185",
+    "usage_count": 1,
+    "last_used": "2025-06-10T18:01:47.134192",
+    "successful_predictions": 0,
+    "failed_predictions": 0,
+    "avg_confidence": null,
+    "tags": [
+      "single_text"
+    ]
+  }
+}

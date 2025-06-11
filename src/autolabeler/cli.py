@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -9,704 +10,571 @@ import click
 import pandas as pd
 from loguru import logger
 
+from .autolabeler_v2 import AutoLabelerV2 as AutoLabeler
 from .config import Settings
-from .ensemble import EnsembleLabeler
-from .labeler import AutoLabeler
-from .model_config import EnsembleMethod, ModelConfig
-from .rule_generator import RuleGenerator
-from .synthetic_generator import SyntheticDataGenerator
+from .core.configs import (
+    BatchConfig,
+    DataSplitConfig,
+    EnsembleConfig,
+    EvaluationConfig,
+    GenerationConfig,
+    LabelingConfig,
+    RuleGenerationConfig,
+)
 
+CONFIG_TYPE_MAP = {
+    "labeling_config": LabelingConfig,
+    "batch_config": BatchConfig,
+    "split_config": DataSplitConfig,
+    "eval_config": EvaluationConfig,
+    "generation_config": GenerationConfig,
+    "rule_config": RuleGenerationConfig,
+    "ensemble_config": EnsembleConfig,
+}
 
-def load_json_config(config_path: Path) -> dict[str, Any]:
-    """Load and validate JSON configuration file."""
-    try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-        return config
-    except Exception as e:
-        logger.error(f"Failed to load configuration from {config_path}: {e}")
-        sys.exit(1)
-
-
-def create_settings_from_config(config: dict[str, Any]) -> Settings:
-    """Create Settings object from configuration dictionary."""
-    # Extract base settings, use defaults for missing values
-    settings_dict = config.get("settings", {})
-
-    return Settings(
-        openrouter_api_key=settings_dict.get("openrouter_api_key", ""),
-        corporate_api_key=settings_dict.get("corporate_api_key", ""),
-        corporate_base_url=settings_dict.get("corporate_base_url"),
-        corporate_model=settings_dict.get("corporate_model", "gpt-4"),
-        llm_model=settings_dict.get("llm_model", "openai/gpt-3.5-turbo"),
-        embedding_model=settings_dict.get("embedding_model", "all-MiniLM-L6-v2"),
-        max_examples_per_query=settings_dict.get("max_examples_per_query", 5),
-        similarity_threshold=settings_dict.get("similarity_threshold", 0.8),
-        knowledge_base_dir=Path(settings_dict.get("knowledge_base_dir", "knowledge_bases")),
-    )
-
-
-def create_model_configs_from_config(config: dict[str, Any]) -> list[ModelConfig]:
-    """Create ModelConfig objects from configuration dictionary."""
-    model_configs = []
-
-    for model_config in config.get("models", []):
-        model_config_obj = ModelConfig(
-            model_name=model_config["model_name"],
-            provider=model_config.get("provider", "openrouter"),
-            temperature=model_config.get("temperature", 0.1),
-            seed=model_config.get("seed"),
-            max_tokens=model_config.get("max_tokens"),
-            description=model_config.get("description", ""),
-            tags=model_config.get("tags", []),
-            custom_params=model_config.get("custom_params", {}),
-        )
-        model_configs.append(model_config_obj)
-
-    return model_configs
+TASK_CONFIG_MAP = {
+    "label": LabelingConfig,
+    "split_data": DataSplitConfig,
+    "evaluate": EvaluationConfig,
+    "generate_synthetic": GenerationConfig,
+    "generate_rules": RuleGenerationConfig,
+    "label_ensemble": EnsembleConfig,
+}
 
 
 @click.group()
-@click.option('--log-level', default='INFO', help='Logging level')
+@click.option(
+    "--log-level",
+    default="INFO",
+    help="Set the logging level (e.g., DEBUG, INFO, WARNING).",
+)
 def cli(log_level: str):
-    """AutoLabeler CLI - Advanced text labeling with LLMs, RAG, and ensembles."""
+    """
+    AutoLabeler v2 CLI: A modular, configuration-driven tool for advanced
+    data labeling, generation, and analysis.
+    """
     logger.remove()
     logger.add(sys.stderr, level=log_level.upper())
+    logger.info(f"Log level set to {log_level.upper()}")
 
 
 @cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('output_file', type=click.Path(path_type=Path))
-@click.option('--text-column', required=True, help='Name of column containing text to label')
-@click.option('--dataset-name', required=True, help='Name of the dataset for knowledge base')
-@click.option('--label-column', default='predicted_label', help='Name of column to store predictions')
-@click.option('--use-rag/--no-rag', default=True, help='Whether to use RAG examples')
-@click.option('--save-to-kb/--no-save-to-kb', default=True, help='Whether to save predictions to knowledge base')
-@click.option('--confidence-threshold', type=float, default=0.0, help='Minimum confidence to save to KB')
-def label(
-    config_file: Path,
-    input_file: Path,
-    output_file: Path,
-    text_column: str,
-    dataset_name: str,
-    label_column: str,
-    use_rag: bool,
-    save_to_kb: bool,
-    confidence_threshold: float
-):
-    """Label text data using multiple model configurations."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
-    model_configs = create_model_configs_from_config(config)
+@click.option(
+    "--config",
+    "config_path",
+    required=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to a JSON configuration file for the pipeline.",
+)
+def run(config_path: Path):
+    """Run a pipeline of tasks from a configuration file."""
+    with open(config_path, "r") as f:
+        config = json.load(f)
 
-    if not model_configs:
-        logger.error("No model configurations found in config file")
+    project_name = config.get("project_name")
+    if not project_name:
+        logger.error("Configuration must include a 'project_name'.")
         sys.exit(1)
 
-    # Load input data
-    logger.info(f"Loading data from {input_file}")
-    df = pd.read_csv(input_file)
-
-    # Process with each model configuration
-    all_results = []
-
-    for i, model_config in enumerate(model_configs):
-        logger.info(f"Processing with model config {i+1}/{len(model_configs)}: {model_config.description}")
-
-        # Create labeler for this configuration
-        labeler = AutoLabeler(dataset_name, settings)
-
-        # Label the dataframe
-        try:
-            labeled_df = labeler.label_dataframe(
-                df=df.copy(),
-                text_column=text_column,
-                label_column=f"{label_column}_{model_config.model_id}",
-                use_rag=use_rag,
-                save_to_knowledge_base=save_to_kb,
-                confidence_threshold=confidence_threshold
-            )
-
-            # Add model configuration info
-            labeled_df[f"{label_column}_{model_config.model_id}_model"] = model_config.model_name
-            labeled_df[f"{label_column}_{model_config.model_id}_temp"] = model_config.temperature
-            labeled_df[f"{label_column}_{model_config.model_id}_config_id"] = model_config.model_id
-
-            all_results.append(labeled_df)
-
-        except Exception as e:
-            logger.error(f"Failed to process with model config {model_config.model_id}: {e}")
-            continue
-
-    if not all_results:
-        logger.error("No successful labeling runs")
-        sys.exit(1)
-
-    # Merge all results
-    final_df = all_results[0]
-    for result_df in all_results[1:]:
-        # Merge on original columns
-        original_cols = df.columns.tolist()
-        final_df = final_df.merge(
-            result_df[original_cols + [col for col in result_df.columns if col not in original_cols]],
-            on=original_cols,
-            how='outer'
-        )
-
-    # Save results
-    logger.info(f"Saving results to {output_file}")
-    final_df.to_csv(output_file, index=False)
-
-    # Print summary
-    logger.info(f"Labeling complete. Processed {len(final_df)} rows with {len(model_configs)} model configurations.")
-
-
-@cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('output_file', type=click.Path(path_type=Path))
-@click.option('--text-column', required=True, help='Name of column containing text to label')
-@click.option('--dataset-name', required=True, help='Name of the dataset for ensemble')
-@click.option('--ensemble-method', default='majority_vote',
-              type=click.Choice(['majority_vote', 'confidence_weighted', 'high_agreement']),
-              help='Ensemble consolidation method')
-@click.option('--save-individual/--no-save-individual', default=True,
-              help='Whether to save individual model results')
-def ensemble(
-    config_file: Path,
-    input_file: Path,
-    output_file: Path,
-    text_column: str,
-    dataset_name: str,
-    ensemble_method: str,
-    save_individual: bool
-):
-    """Label text data using ensemble of multiple models."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
-    model_configs = create_model_configs_from_config(config)
-
-    if not model_configs:
-        logger.error("No model configurations found in config file")
-        sys.exit(1)
-
-    # Load input data
-    logger.info(f"Loading data from {input_file}")
-    df = pd.read_csv(input_file)
-
-    # Create ensemble labeler
-    ensemble_labeler = EnsembleLabeler(dataset_name, settings)
-
-    # Add model configurations
-    model_ids = []
-    for model_config in model_configs:
-        model_id = ensemble_labeler.add_model_config(model_config)
-        model_ids.append(model_id)
-
-    # Create ensemble method
-    if ensemble_method == "majority_vote":
-        method = EnsembleMethod.majority_vote()
-    elif ensemble_method == "confidence_weighted":
-        method = EnsembleMethod.confidence_weighted()
-    elif ensemble_method == "high_agreement":
-        method = EnsembleMethod.high_agreement()
-    else:
-        method = EnsembleMethod.majority_vote()
-
-    # Run ensemble labeling
-    logger.info(f"Running ensemble labeling with {len(model_configs)} models")
-    try:
-        ensemble_df = ensemble_labeler.label_dataframe_ensemble(
-            df=df,
-            text_column=text_column,
-            model_ids=model_ids,
-            ensemble_method=method,
-            save_individual_results=save_individual
-        )
-
-        # Save results
-        logger.info(f"Saving ensemble results to {output_file}")
-        ensemble_df.to_csv(output_file, index=False)
-
-        # Print summary
-        logger.info(f"Ensemble labeling complete. Processed {len(ensemble_df)} rows.")
-
-        # Print ensemble summary
-        summary = ensemble_labeler.get_ensemble_summary()
-        logger.info(f"Ensemble summary: {summary}")
-
-    except Exception as e:
-        logger.error(f"Ensemble labeling failed: {e}")
-        sys.exit(1)
-
-
-@cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--dataset-name', required=True, help='Name of the dataset for synthetic generation')
-@click.option('--target-label', required=True, help='Target label for synthetic examples')
-@click.option('--num-examples', type=int, default=5, help='Number of synthetic examples to generate')
-@click.option('--strategy', default='mixed',
-              type=click.Choice(['paraphrase', 'interpolate', 'extrapolate', 'transform', 'mixed']),
-              help='Generation strategy')
-@click.option('--output-file', type=click.Path(path_type=Path), help='Output file for synthetic examples')
-@click.option('--add-to-kb/--no-add-to-kb', default=True, help='Whether to add to knowledge base')
-@click.option('--confidence-threshold', type=float, default=0.7, help='Minimum confidence to add to KB')
-def generate(
-    config_file: Path,
-    dataset_name: str,
-    target_label: str,
-    num_examples: int,
-    strategy: str,
-    output_file: Path | None,
-    add_to_kb: bool,
-    confidence_threshold: float
-):
-    """Generate synthetic examples for a specific label."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
-    model_configs = create_model_configs_from_config(config)
-
-    if not model_configs:
-        logger.error("No model configurations found in config file")
-        sys.exit(1)
-
-    # Generate with each model configuration
-    all_synthetic_examples = []
-
-    for i, model_config in enumerate(model_configs):
-        logger.info(f"Generating with model config {i+1}/{len(model_configs)}: {model_config.description}")
-
-        try:
-            # Create synthetic generator for this configuration
-            generator = SyntheticDataGenerator(dataset_name, settings)
-
-            # Generate examples
-            examples = generator.generate_examples_for_label(
-                target_label=target_label,
-                num_examples=num_examples,
-                strategy=strategy,
-                add_to_knowledge_base=add_to_kb,
-                confidence_threshold=confidence_threshold
-            )
-
-            # Convert to DataFrame format
-            for example in examples:
-                example_dict = {
-                    "text": example.text,
-                    "label": example.label,
-                    "confidence": example.confidence,
-                    "reasoning": example.reasoning,
-                    "strategy": strategy,
-                    "model_config_id": model_config.model_id,
-                    "model_name": model_config.model_name,
-                    "temperature": model_config.temperature,
-                }
-                if example.generation_metadata:
-                    for k, v in example.generation_metadata.items():
-                        example_dict[f"meta_{k}"] = v
-
-                all_synthetic_examples.append(example_dict)
-
-        except Exception as e:
-            logger.error(f"Failed to generate with model config {model_config.model_id}: {e}")
-            continue
-
-    if not all_synthetic_examples:
-        logger.error("No successful synthetic generation runs")
-        sys.exit(1)
-
-    # Create DataFrame
-    synthetic_df = pd.DataFrame(all_synthetic_examples)
-
-    # Save to file if specified
-    if output_file:
-        logger.info(f"Saving synthetic examples to {output_file}")
-        synthetic_df.to_csv(output_file, index=False)
-
-    # Print summary
-    logger.info(f"Generated {len(all_synthetic_examples)} synthetic examples for label '{target_label}'")
-    logger.info(f"Average confidence: {synthetic_df['confidence'].mean():.3f}")
-
-
-@cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--dataset-name', required=True, help='Name of the dataset for balancing')
-@click.option('--target-balance', default='equal', help='Target balance: "equal" or JSON dict like {"pos":100,"neg":100}')
-@click.option('--max-per-label', type=int, default=50, help='Maximum synthetic examples per label')
-@click.option('--confidence-threshold', type=float, default=0.7, help='Minimum confidence threshold')
-@click.option('--output-file', type=click.Path(path_type=Path), help='Output file for synthetic examples')
-def balance(
-    config_file: Path,
-    dataset_name: str,
-    target_balance: str,
-    max_per_label: int,
-    confidence_threshold: float,
-    output_file: Path | None
-):
-    """Generate synthetic examples to balance dataset labels."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
-
-    # Parse target balance
-    if target_balance != "equal":
-        try:
-            target_balance = json.loads(target_balance)
-        except json.JSONDecodeError:
-            logger.error("Invalid target-balance format. Use 'equal' or JSON dict like '{\"pos\":100,\"neg\":100}'")
-            sys.exit(1)
-
-    # Create synthetic generator
-    generator = SyntheticDataGenerator(dataset_name, settings)
-
-    # Analyze current balance
-    logger.info("Analyzing current label distribution...")
-    analysis = generator.analyze_class_imbalance()
-    logger.info(f"Current distribution: {analysis.get('distribution', {})}")
-
-    # Generate balanced examples
-    logger.info("Generating synthetic examples for balancing...")
-    balanced_examples = generator.balance_dataset(
-        target_balance=target_balance,
-        max_synthetic_per_label=max_per_label,
-        confidence_threshold=confidence_threshold
-    )
-
-    # Convert to DataFrame if output file specified
-    if output_file:
-        all_examples = []
-        for label, examples in balanced_examples.items():
-            for example in examples:
-                example_dict = {
-                    "text": example.text,
-                    "label": example.label,
-                    "confidence": example.confidence,
-                    "reasoning": example.reasoning,
-                    "target_label": label,
-                }
-                if example.generation_metadata:
-                    for k, v in example.generation_metadata.items():
-                        example_dict[f"meta_{k}"] = v
-                all_examples.append(example_dict)
-
-        if all_examples:
-            df = pd.DataFrame(all_examples)
-            logger.info(f"Saving balanced synthetic examples to {output_file}")
-            df.to_csv(output_file, index=False)
-
-    # Print summary
-    total_generated = sum(len(examples) for examples in balanced_examples.values())
-    logger.info(f"Generated {total_generated} synthetic examples for dataset balancing")
-
-    for label, examples in balanced_examples.items():
-        logger.info(f"  {label}: {len(examples)} examples")
-
-
-@cli.command()
-@click.argument('dataset_name')
-@click.option('--config-file', type=click.Path(exists=True, path_type=Path),
-              help='Configuration file for settings')
-def stats(dataset_name: str, config_file: Path | None):
-    """Show statistics for a dataset's knowledge base."""
-    if config_file:
-        config = load_json_config(config_file)
-        settings = create_settings_from_config(config)
-    else:
-        settings = Settings()  # Use defaults
-
-    # Create labeler to access knowledge base
-    labeler = AutoLabeler(dataset_name, settings)
-
-    # Get and display stats
-    kb_stats = labeler.get_knowledge_base_stats()
-    prompt_stats = labeler.get_prompt_analytics()
-
-    click.echo(f"\n=== Knowledge Base Stats for '{dataset_name}' ===")
-    click.echo(f"Total examples: {kb_stats.get('total_examples', 0)}")
-    click.echo(f"Sources: {kb_stats.get('sources', {})}")
-    click.echo(f"Label distribution: {kb_stats.get('label_distribution', {})}")
-    click.echo(f"Last updated: {kb_stats.get('last_updated', 'Never')}")
-
-    click.echo(f"\n=== Prompt Analytics ===")
-    click.echo(f"Total prompts: {prompt_stats.get('total_prompts', 0)}")
-    click.echo(f"Success rate: {prompt_stats.get('success_rate', 0):.2%}")
-    click.echo(f"Average confidence: {prompt_stats.get('average_confidence', 0):.3f}")
-
-
-@cli.command()
-def create_config():
-    """Create a sample configuration file."""
-    sample_config = {
-        "settings": {
-            "openrouter_api_key": "your-openrouter-api-key",
-            "corporate_api_key": "your-corporate-api-key",
-            "corporate_base_url": "https://your-corporate-api.com/v1",
-            "corporate_model": "gpt-4",
-            "llm_model": "openai/gpt-3.5-turbo",
-            "embedding_model": "all-MiniLM-L6-v2",
-            "max_examples_per_query": 5,
-            "similarity_threshold": 0.8,
-            "knowledge_base_dir": "knowledge_bases"
-        },
-        "models": [
-            {
-                "model_name": "openai/gpt-3.5-turbo",
-                "provider": "openrouter",
-                "temperature": 0.1,
-                "seed": 42,
-                "description": "Conservative GPT-3.5",
-                "tags": ["conservative", "low-temp"],
-                "custom_params": {}
-            },
-            {
-                "model_name": "openai/gpt-3.5-turbo",
-                "provider": "openrouter",
-                "temperature": 0.7,
-                "seed": 42,
-                "description": "Creative GPT-3.5",
-                "tags": ["creative", "high-temp"],
-                "custom_params": {}
-            },
-            {
-                "model_name": "anthropic/claude-3-haiku",
-                "provider": "openrouter",
-                "temperature": 0.3,
-                "seed": 123,
-                "description": "Claude Haiku",
-                "tags": ["claude", "mid-temp"],
-                "custom_params": {}
-            }
-        ]
+    settings = Settings()
+    labeler = AutoLabeler(project_name, settings)
+    data_context: dict[str, Any] = {
+        name: _load_data(Path(path))
+        for name, path in config.get("data_context", {}).items()
     }
 
-    config_path = Path("autolabeler_config.json")
-    with open(config_path, 'w') as f:
-        json.dump(sample_config, f, indent=2)
+    task_dispatcher = {
+        "split_data": labeler.split_data,
+        "add_training_data": labeler.add_training_data,
+        "label": labeler.label,
+        "label_ensemble": labeler.label_ensemble,
+        "evaluate": labeler.evaluate,
+        "generate_rules": labeler.generate_rules,
+        "save_data": lambda df, output_file: _save_data(df, Path(output_file)),
+    }
 
-    click.echo(f"Sample configuration created at: {config_path}")
-    click.echo("Please edit the file to add your API keys and adjust model configurations.")
+    for i, task in enumerate(config.get("tasks", [])):
+        task_name = task.get("name", f"Task {i+1}")
+        task_type = task.get("type")
+        params = task.get("params", {}).copy()
+        logger.info(f"Running task '{task_name}' of type '{task_type}'")
 
+        if task_type not in task_dispatcher:
+            logger.error(f"Unknown task type '{task_type}' in task '{task_name}'.")
+            continue
 
-@cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--text-column', required=True, help='Name of column containing text data')
-@click.option('--label-column', required=True, help='Name of column containing labels')
-@click.option('--dataset-name', required=True, help='Name of the dataset for rule generation')
-@click.option('--task-description', help='Description of the labeling task')
-@click.option('--batch-size', type=int, default=50, help='Number of examples to analyze per batch')
-@click.option('--min-examples', type=int, default=3, help='Minimum examples needed to create a rule')
-@click.option('--output-format', default='markdown',
-              type=click.Choice(['markdown', 'html', 'json']),
-              help='Output format for human-readable guidelines')
-@click.option('--guidelines-file', type=click.Path(path_type=Path),
-              help='Output file for human-readable annotation guidelines')
-def generate_rules(
-    config_file: Path,
-    input_file: Path,
-    text_column: str,
-    label_column: str,
-    dataset_name: str,
-    task_description: str | None,
-    batch_size: int,
-    min_examples: int,
-    output_format: str,
-    guidelines_file: Path | None,
-):
-    """Generate labeling rules from labeled training data."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
+        # Prepare parameters by resolving keys from context
+        resolved_params = {}
+        for key, value in params.items():
+            if key.endswith("_key"):
+                if key == "df_key":
+                    if value not in data_context:
+                        logger.error(f"Data key '{value}' not found for task '{task_name}'.")
+                        sys.exit(1)
+                    resolved_params["df"] = data_context[value]
+                elif key == "ruleset_key":
+                    if value not in data_context:
+                        logger.error(f"Ruleset key '{value}' not found for task '{task_name}'.")
+                        sys.exit(1)
+                    resolved_params["ruleset"] = data_context[value]
+            elif key.endswith("_path"):
+                if key == "ruleset_path":
+                    from .core.utils import ruleset_utils
+                    resolved_params["ruleset"] = ruleset_utils.load_ruleset_for_prompt(Path(value))
+            elif key.endswith("_config"):
+                config_model = _resolve_config(key, value)
+                if config_model:
+                    resolved_params[key] = config_model
+            elif key == "config" and task_type in TASK_CONFIG_MAP:
+                # Handle generic "config" key by mapping to task-specific config
+                config_class = TASK_CONFIG_MAP[task_type]
+                try:
+                    config_model = config_class(**value)
+                    # Map to the expected parameter name
+                    if task_type == "label":
+                        resolved_params["labeling_config"] = config_model
+                    elif task_type == "split_data":
+                        resolved_params["split_config"] = config_model
+                    elif task_type == "evaluate":
+                        resolved_params["eval_config"] = config_model
+                    elif task_type == "generate_synthetic":
+                        resolved_params["generation_config"] = config_model
+                    elif task_type == "generate_rules":
+                        resolved_params["rule_config"] = config_model
+                    elif task_type == "label_ensemble":
+                        resolved_params["ensemble_config"] = config_model
+                except Exception as e:
+                    logger.error(f"Failed to parse config for task '{task_type}': {e}")
+            else:
+                resolved_params[key] = value
 
-    # Load input data
-    logger.info(f"Loading labeled data from {input_file}")
-    df = pd.read_csv(input_file)
+        method = task_dispatcher[task_type]
+        result = method(**resolved_params)
 
-    # Validate columns
-    if text_column not in df.columns:
-        logger.error(f"Text column '{text_column}' not found in data")
-        sys.exit(1)
-    if label_column not in df.columns:
-        logger.error(f"Label column '{label_column}' not found in data")
-        sys.exit(1)
+        # Store outputs for subsequent tasks
+        if isinstance(result, pd.DataFrame):
+            key = params.get("output_df_key")
+            if key:
+                data_context[key] = result
+        elif isinstance(result, tuple) and all(
+            isinstance(x, pd.DataFrame) for x in result
+        ):
+            if task_type == "split_data":
+                data_context[params.get("output_train_df_key")] = result[0]
+                data_context[params.get("output_test_df_key")] = result[1]
+        elif isinstance(result, dict):
+            key = params.get("output_ruleset_key")
+            if key:
+                data_context[key] = result
+        elif result is not None:
+            logger.warning(
+                f"Task '{task_name}' returned an unsupported type: {type(result)}"
+            )
 
-    # Create rule generator
-    rule_generator = RuleGenerator(dataset_name, settings)
-
-    # Generate rules
-    logger.info("Analyzing data and generating labeling rules...")
-    result = rule_generator.generate_rules_from_data(
-        df=df,
-        text_column=text_column,
-        label_column=label_column,
-        task_description=task_description,
-        batch_size=batch_size,
-        min_examples_per_rule=min_examples,
-    )
-
-    # Print summary
-    ruleset = result.ruleset
-    logger.info(f"Generated {len(ruleset.rules)} rules for {len(ruleset.label_categories)} labels")
-
-    click.echo(f"\n=== Rule Generation Summary ===")
-    click.echo(f"Dataset: {ruleset.dataset_name}")
-    click.echo(f"Task: {ruleset.task_description}")
-    click.echo(f"Total rules: {len(ruleset.rules)}")
-    click.echo(f"Label categories: {', '.join(ruleset.label_categories)}")
-
-    # Show rules per label
-    rules_per_label = {}
-    for rule in ruleset.rules:
-        rules_per_label[rule.label] = rules_per_label.get(rule.label, 0) + 1
-
-    click.echo("\nRules per label:")
-    for label, count in rules_per_label.items():
-        click.echo(f"  {label}: {count} rules")
-
-    # Export human-readable guidelines if requested
-    if guidelines_file:
-        rule_generator.export_ruleset_for_humans(
-            ruleset, guidelines_file, format=output_format
-        )
-        click.echo(f"\nAnnotation guidelines exported to: {guidelines_file}")
-
-    # Show recommendations
-    if result.recommendations:
-        click.echo("\nRecommendations:")
-        for rec in result.recommendations:
-            click.echo(f"  - {rec}")
-
-    # Show coverage analysis
-    if result.coverage_analysis:
-        coverage = result.coverage_analysis
-        click.echo(f"\nRule coverage: {coverage.get('overall_coverage', 0):.2%} of training data")
+    logger.info("Pipeline run complete.")
 
 
-@cli.command()
-@click.argument('config_file', type=click.Path(exists=True, path_type=Path))
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--text-column', required=True, help='Name of column containing text data')
-@click.option('--label-column', required=True, help='Name of column containing labels')
-@click.option('--dataset-name', required=True, help='Name of the dataset for rule updates')
-@click.option('--output-format', default='markdown',
-              type=click.Choice(['markdown', 'html', 'json']),
-              help='Output format for updated guidelines')
-@click.option('--guidelines-file', type=click.Path(path_type=Path),
-              help='Output file for updated annotation guidelines')
-def update_rules(
-    config_file: Path,
-    input_file: Path,
-    text_column: str,
-    label_column: str,
-    dataset_name: str,
-    output_format: str,
-    guidelines_file: Path | None,
-):
-    """Update existing labeling rules with new training data."""
-    config = load_json_config(config_file)
-    settings = create_settings_from_config(config)
-
-    # Load new training data
-    logger.info(f"Loading new labeled data from {input_file}")
-    df = pd.read_csv(input_file)
-
-    # Validate columns
-    if text_column not in df.columns:
-        logger.error(f"Text column '{text_column}' not found in data")
-        sys.exit(1)
-    if label_column not in df.columns:
-        logger.error(f"Label column '{label_column}' not found in data")
-        sys.exit(1)
-
-    # Create rule generator
-    rule_generator = RuleGenerator(dataset_name, settings)
-
-    # Check if existing ruleset exists
+def _resolve_config(key: str, value: dict) -> Any:
+    """Parse a config dictionary into its Pydantic model."""
+    config_class = CONFIG_TYPE_MAP.get(key)
+    if not config_class:
+        logger.warning(f"No Pydantic model found for config key: {key}")
+        return value
+    if config_class == "NotImplemented":
+        logger.warning(f"Parsing for '{key}' is not yet implemented.")
+        return value
     try:
-        existing_ruleset = rule_generator.load_latest_ruleset()
-        logger.info(f"Found existing ruleset version {existing_ruleset.version}")
-    except FileNotFoundError:
-        logger.error(f"No existing ruleset found for dataset '{dataset_name}'")
-        logger.error("Use 'generate-rules' command to create an initial ruleset first")
+        return config_class(**value)
+    except Exception as e:
+        logger.error(f"Failed to parse config for {key}: {e}")
+        return None
+
+
+def _load_data(file_path: Path) -> pd.DataFrame:
+    """Load data and add a persistent unique ID column if it's missing."""
+    if not file_path.exists():
+        logger.error(f"Input file not found: {file_path}")
         sys.exit(1)
-
-    # Update rules
-    logger.info("Updating rules with new training data...")
-    update_result = rule_generator.update_rules_with_new_data(
-        new_df=df,
-        text_column=text_column,
-        label_column=label_column,
-        existing_ruleset=existing_ruleset,
-    )
-
-    # Print update summary
-    click.echo(f"\n=== Rule Update Summary ===")
-    click.echo(f"Dataset: {update_result.updated_ruleset.dataset_name}")
-    click.echo(f"Version: {existing_ruleset.version} -> {update_result.updated_ruleset.version}")
-    click.echo(f"New rules added: {update_result.new_rules_added}")
-    click.echo(f"Rules modified: {update_result.rules_modified}")
-    click.echo(f"Rules removed: {update_result.rules_removed}")
-
-    # Show changes made
-    if update_result.changes_made:
-        click.echo("\nChanges made:")
-        for change in update_result.changes_made[:10]:  # Limit to first 10
-            click.echo(f"  - {change}")
-        if len(update_result.changes_made) > 10:
-            click.echo(f"  ... and {len(update_result.changes_made) - 10} more changes")
-
-    # Export updated guidelines if requested
-    if guidelines_file:
-        rule_generator.export_ruleset_for_humans(
-            update_result.updated_ruleset, guidelines_file, format=output_format
-        )
-        click.echo(f"\nUpdated annotation guidelines exported to: {guidelines_file}")
-
-    logger.info("Rule update completed successfully")
-
-
-@cli.command()
-@click.argument('dataset_name')
-@click.option('--config-file', type=click.Path(exists=True, path_type=Path),
-              help='Configuration file for settings')
-@click.option('--output-format', default='markdown',
-              type=click.Choice(['markdown', 'html', 'json']),
-              help='Output format for guidelines')
-@click.option('--output-file', type=click.Path(path_type=Path), required=True,
-              help='Output file for annotation guidelines')
-def export_rules(
-    dataset_name: str,
-    config_file: Path | None,
-    output_format: str,
-    output_file: Path,
-):
-    """Export the latest ruleset as human-readable annotation guidelines."""
-    if config_file:
-        config = load_json_config(config_file)
-        settings = create_settings_from_config(config)
+    logger.info(f"Loading data from {file_path}...")
+    if file_path.suffix == ".parquet":
+        df = pd.read_parquet(file_path)
     else:
-        settings = Settings()  # Use defaults
+        df = pd.read_csv(file_path)
 
-    # Create rule generator
-    rule_generator = RuleGenerator(dataset_name, settings)
+    # Add a unique ID to each row for robust progress tracking if it doesn't exist
+    if "autolabeler_id" not in df.columns:
+        logger.info(
+            f"'autolabeler_id' column not found in {file_path}. "
+            f"Adding unique IDs and saving back to the original file."
+        )
+        df["autolabeler_id"] = [uuid.uuid4().hex for _ in range(len(df))]
 
-    # Load latest ruleset
-    try:
-        ruleset = rule_generator.load_latest_ruleset()
-        logger.info(f"Found ruleset version {ruleset.version}")
-    except FileNotFoundError:
-        logger.error(f"No ruleset found for dataset '{dataset_name}'")
-        logger.error("Use 'generate-rules' command to create a ruleset first")
+        try:
+            # Save the DataFrame with the new ID column back to the original file
+            if file_path.suffix == ".parquet":
+                df.to_parquet(file_path, index=False)
+            else:
+                df.to_csv(file_path, index=False)
+            logger.info(f"Successfully saved data with unique IDs to {file_path}.")
+        except Exception as e:
+            logger.error(f"Failed to save data with unique IDs back to {file_path}: {e}")
+            logger.warning("Continuing without persistent IDs. Progress may not be saved correctly across runs.")
+
+    return df
+
+
+def _save_data(df: pd.DataFrame, file_path: Path):
+    """Save data to a CSV or Parquet file."""
+    logger.info(f"Saving {len(df)} rows to {file_path}...")
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    if file_path.suffix == ".parquet":
+        df.to_parquet(file_path, index=False)
+    else:
+        df.to_csv(file_path, index=False)
+    logger.info("Save complete.")
+
+
+@cli.command()
+@click.option(
+    "--dataset-name", required=True, help="A unique name for your labeling project."
+)
+@click.option(
+    "--input-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to the input CSV or Parquet file containing text data.",
+)
+@click.option(
+    "--output-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to save the labeled output data.",
+)
+@click.option("--text-column", required=True, help="The name of the column with text to label.")
+@click.option(
+    "--train-file",
+    type=click.Path(path_type=Path),
+    help="Optional path to a file with pre-labeled training examples.",
+)
+@click.option(
+    "--label-column",
+    help="The name of the label column in the training data. Required if --train-file is used.",
+)
+@click.option(
+    "--model-name", help="The LLM to use for labeling (e.g., 'gpt-3.5-turbo')."
+)
+@click.option(
+    "--temperature",
+    type=float,
+    default=0.1,
+    help="LLM temperature for sampling.",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=50,
+    show_default=True,
+    help="Number of items to process in a concurrent batch.",
+)
+def label(
+    dataset_name: str,
+    input_file: Path,
+    output_file: Path,
+    text_column: str,
+    train_file: Path | None,
+    label_column: str | None,
+    model_name: str | None,
+    temperature: float,
+    batch_size: int,
+):
+    """Label a dataset using a single model with RAG."""
+    settings = Settings()
+    if model_name:
+        settings.llm_model = model_name
+    if temperature:
+        settings.temperature = temperature
+
+    labeler = AutoLabeler(dataset_name, settings)
+
+    if train_file:
+        if not label_column:
+            logger.error("--label-column is required when using --train-file.")
+            sys.exit(1)
+        train_df = _load_data(train_file)
+        labeler.add_training_data(train_df, text_column, label_column)
+
+    df = _load_data(input_file)
+    labeling_config = LabelingConfig(
+        use_rag=True if train_file else False,
+        model_name=settings.llm_model,
+        temperature=settings.temperature,
+    )
+    batch_config = BatchConfig(batch_size=batch_size, resume=True)
+
+    labeled_df = labeler.label(
+        df, text_column, labeling_config=labeling_config, batch_config=batch_config
+    )
+    _save_data(labeled_df, output_file)
+
+
+@cli.command()
+@click.option("--dataset-name", required=True, help="A unique name for your project.")
+@click.option(
+    "--input-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to the input file.",
+)
+@click.option(
+    "--output-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to save the labeled output.",
+)
+@click.option("--text-column", required=True, help="Name of the text column.")
+@click.option(
+    "--train-file",
+    type=click.Path(path_type=Path),
+    help="Optional path to training data.",
+)
+@click.option(
+    "--label-column",
+    help="Name of label column. Required if --train-file is used.",
+)
+@click.option(
+    "--models",
+    required=True,
+    help="Comma-separated list of models to use (e.g., 'gpt-4,claude-3').",
+)
+@click.option(
+    "--method",
+    default="majority_vote",
+    type=click.Choice(["majority_vote", "confidence_weighted", "high_agreement"]),
+    help="Ensemble consolidation method.",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=20,
+    show_default=True,
+    help="Number of items to process in a concurrent batch.",
+)
+def ensemble(
+    dataset_name: str,
+    input_file: Path,
+    output_file: Path,
+    text_column: str,
+    train_file: Path | None,
+    label_column: str | None,
+    models: str,
+    method: str,
+    batch_size: int,
+):
+    """Label a dataset using a multi-model ensemble."""
+    settings = Settings()
+    labeler = AutoLabeler(dataset_name, settings)
+    model_list = [{'model_name': m.strip()} for m in models.split(",")]
+
+    if train_file:
+        if not label_column:
+            logger.error("--label-column is required when using --train-file.")
+            sys.exit(1)
+        train_df = _load_data(train_file)
+        labeler.add_training_data(train_df, text_column, label_column)
+
+    df = _load_data(input_file)
+    ensemble_config = EnsembleConfig(method=method)
+    batch_config = BatchConfig(batch_size=batch_size, resume=True)
+
+    labeled_df = labeler.label_ensemble(
+        df,
+        text_column,
+        model_configs=model_list,
+        ensemble_config=ensemble_config,
+        batch_config=batch_config,
+    )
+    _save_data(labeled_df, output_file)
+
+
+@cli.command()
+@click.option("--dataset-name", required=True, help="A unique name for your project.")
+@click.option(
+    "--labeled-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to a file with labeled examples.",
+)
+@click.option("--text-column", required=True, help="Name of the text column.")
+@click.option("--label-column", required=True, help="Name of the label column.")
+@click.option(
+    "--output-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to save the generated synthetic data.",
+)
+@click.option(
+    "--strategy",
+    default="balanced",
+    help="Generation strategy: 'balanced' or a JSON distribution like '{\"pos\":100,\"neg\":50}'.",
+)
+@click.option(
+    "--max-per-class",
+    type=int,
+    default=100,
+    help="Maximum examples to generate per class for 'balanced' strategy.",
+)
+def generate(
+    dataset_name: str,
+    labeled_file: Path,
+    text_column: str,
+    label_column: str,
+    output_file: Path,
+    strategy: str,
+    max_per_class: int,
+):
+    """Generate synthetic data to balance a dataset."""
+    settings = Settings()
+    labeler = AutoLabeler(dataset_name, settings)
+
+    # Load labeled data to understand distribution
+    labeled_df = _load_data(labeled_file)
+    labeler.add_training_data(labeled_df, text_column, label_column)
+
+    target_dist: Any
+    if strategy == "balanced":
+        # Calculate target distribution to balance all classes
+        current_dist = labeled_df[label_column].value_counts().to_dict()
+        if not current_dist:
+            logger.error("Could not determine label distribution. Ensure data is labeled.")
+        sys.exit(1)
+        max_count = max(current_dist.values())
+        target_dist = {
+            label: max(0, min(max_per_class, max_count - count))
+            for label, count in current_dist.items()
+        }
+        logger.info(f"Targeting generation distribution: {target_dist}")
+    else:
+        try:
+            target_dist = json.loads(strategy)
+        except json.JSONDecodeError:
+            logger.error(
+                "Invalid strategy format. Use 'balanced' or JSON like '{\"pos\":100}'."
+            )
         sys.exit(1)
 
-    # Export guidelines
-    rule_generator.export_ruleset_for_humans(
-        ruleset, output_file, format=output_format
+    config = GenerationConfig(add_to_knowledge_base=False)
+    synthetic_df = labeler.generate_synthetic_data(
+        target_distribution=target_dist, config=config
     )
 
-    click.echo(f"Annotation guidelines exported to: {output_file}")
-    click.echo(f"Format: {output_format}")
-    click.echo(f"Ruleset version: {ruleset.version}")
-    click.echo(f"Total rules: {len(ruleset.rules)}")
+    if not synthetic_df.empty:
+        _save_data(synthetic_df, output_file)
+    else:
+        logger.info("No synthetic data was generated.")
+
+
+@cli.command()
+@click.option("--dataset-name", required=True, help="A unique name for your project.")
+@click.option(
+    "--labeled-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to a file with labeled examples.",
+)
+@click.option("--text-column", required=True, help="Name of the text column.")
+@click.option("--label-column", required=True, help="Name of the label column.")
+@click.option(
+    "--output-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to save the generated rules (e.g., 'rules.md').",
+)
+@click.option(
+    "--task-description",
+    required=True,
+    help="A clear description of the labeling task.",
+)
+@click.option(
+    "--output-format",
+    default="markdown",
+    type=click.Choice(["markdown", "json"]),
+    help="Output format for the rules.",
+)
+def rules(
+    dataset_name: str,
+    labeled_file: Path,
+    text_column: str,
+    label_column: str,
+    output_file: Path,
+    task_description: str,
+    output_format: str,
+):
+    """Generate human-readable labeling rules from data."""
+    settings = Settings()
+    labeler = AutoLabeler(dataset_name, settings)
+
+    labeled_df = _load_data(labeled_file)
+
+    config = RuleGenerationConfig(
+        task_description=task_description, export_format=output_format
+    )
+
+    # The service returns a list of rules, but the main interface can handle exporting.
+    labeler.generate_rules(
+        labeled_df,
+        text_column,
+        label_column,
+        config=config,
+        output_file=output_file,
+    )
+    logger.info(f"Rules saved to {output_file}")
+
+
+@cli.command()
+@click.option("--dataset-name", required=True, help="The project to evaluate.")
+@click.option(
+    "--predictions-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to a file with model predictions.",
+)
+@click.option(
+    "--true-label-column", required=True, help="Column name for the ground truth labels."
+)
+@click.option(
+    "--pred-label-column", required=True, help="Column name for the predicted labels."
+)
+@click.option(
+    "--report-file",
+    type=click.Path(path_type=Path),
+    help="Optional path to save an HTML evaluation report.",
+)
+def evaluate(
+    dataset_name: str,
+    predictions_file: Path,
+    true_label_column: str,
+    pred_label_column: str,
+    report_file: Path | None,
+):
+    """Evaluate prediction accuracy and generate a report."""
+    settings = Settings()
+    labeler = AutoLabeler(dataset_name, settings)
+
+    df = _load_data(predictions_file)
+
+    metrics = labeler.evaluate(
+        df,
+        true_label_column,
+        pred_label_column,
+        output_report_path=report_file,
+    )
+
+    logger.info("Evaluation Metrics:")
+    for key, value in metrics.items():
+        if isinstance(value, float):
+            logger.info(f"  {key}: {value:.4f}")
+        else:
+            logger.info(f"  {key}: {value}")
 
 
 if __name__ == "__main__":

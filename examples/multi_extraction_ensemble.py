@@ -101,8 +101,8 @@ class HeadlineMultiExtractor:
                 template_path=Path(config["template_path"])
             )
 
-            # Override the response model
-            labeler.llm = labeler.llm.with_structured_output(schema=MultiFieldLabelResponse)
+            # Override the response model using function_calling method
+            labeler.llm = labeler.llm.with_structured_output(schema=MultiFieldLabelResponse, method="function_calling")
 
             labelers.append(labeler)
 

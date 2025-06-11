@@ -1,0 +1,328 @@
+{
+  "dataset_name": "cb_independence",
+  "task_description": "Label headlines related to central bank independence and related statements with degrees of support, neutrality, criticism, or unrelatedness.",
+  "label_categories": [
+    "-3",
+    "-2",
+    "-1",
+    "0",
+    "1",
+    "2",
+    "3",
+    "-9999"
+  ],
+  "rules": [
+    {
+      "rule_id": "R-003",
+      "label": "-3",
+      "pattern_description": "Headlines strongly praising or emphasizing the crucial importance of central bank independence, using strong positive or reverent language, or explicitly stating refusal to comment on monetary policy as a sign of respect.",
+      "conditions": [
+        "Use when headline shows strong reverence or praise for central bank independence or explicitly refuses to comment on monetary policy as a sign of respect."
+      ],
+      "indicators": [
+        "strongly support independence",
+        "crucial importance of independence",
+        "refusal to comment on monetary policy out of respect",
+        "strong praise for central bank leadership"
+      ],
+      "examples": [
+        "*KWARTENG EMPHASISED IMPORTANCE OF SUPPORTING INDEPENDENT BOE"
+      ],
+      "counter_examples": null,
+      "confidence": 0.9,
+      "frequency": 10,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R-002",
+      "label": "-2",
+      "pattern_description": "Headlines indicating respect or moderate support for central bank independence, including affirmations of independence without strong emphasis, warnings against undermining independence, and statements showing trust or respect for the institution.",
+      "conditions": [
+        "Use when headline shows moderate respect or support for central bank independence without strong praise.",
+        "Includes warnings against undermining independence.",
+        "Includes expressions of trust or respect for the institution."
+      ],
+      "indicators": [
+        "respect independence",
+        "support independence",
+        "independence is important",
+        "warn against undermining independence",
+        "trusts the fed",
+        "respects fed independence",
+        "strong believer in fed independence",
+        "govt commitment to boe independence"
+      ],
+      "examples": [
+        "*GEITHNER SAYS IMPORTANT FED'S INDEPENDENCE ISN'T UNDERMINED",
+        "*HASSETT SAYS WE 100% RESPECT FED INDEPENDENCE",
+        "*YELLEN SAYS SHE IS A STRONG BELIEVER IN FED INDEPENDENCE",
+        "*KWARTENG: GOVT COMMITMENT TO BOE INDEPENDENCE IS `ABSOLUTE'",
+        "*HASSETT: WE VERY MUCH RESPECT INDEPENDENCE OF THE FED"
+      ],
+      "counter_examples": null,
+      "confidence": 0.95,
+      "frequency": 30,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R-001",
+      "label": "-1",
+      "pattern_description": "Headlines mildly supportive or respectful of central bank independence or mildly neutral statements about Fed actions; showing respect or mild affirmation without strong emphasis or praise.",
+      "conditions": [
+        "Use when headline shows mild respect or mild affirmation of central bank independence.",
+        "Includes mild neutral statements about Fed actions.",
+        "Also covers expressions of confidence or trust without strong praise."
+      ],
+      "indicators": [
+        "mild respect for fed independence",
+        "mild affirmation",
+        "confident in fed",
+        "respect fed independence",
+        "fed is independent",
+        "fed picks will have broad support",
+        "fed is independent operation",
+        "refuses comment on fed rates"
+      ],
+      "examples": [
+        "*KWARTENG EMPHASISED IMPORTANCE OF SUPPORTING INDEPENDENT BOE",
+        "*KUDLOW: FED'S POWELL IS ON TARGET",
+        "*BIDEN: SUPPORT FED'S INDEPENDENCE",
+        "*TRUMP SAYS HE HAS NO INTENTION OF FIRING FED CHAIR POWELL",
+        "*HASSETT: I DON'T COMMENT ON FED RATES",
+        "*UK NOT ON A `GLIDE PATH' TO HALVE INFLATION: SUNAK SPOKESMAN",
+        "*YELLEN: FED VERY COMMITTED TO BRINGING DOWN INFLATION",
+        "*KUDLOW: THE FED IS INDEPENDENT, ITS GRADUALIST APPROACH IS GOOD",
+        "*BIDEN SAYS HE MADE CLEAR TO POWELL THAT FED IS INDEPENDENT",
+        "*CAMERON SAYS `LET'S PUT OUR TRUST IN THE BANK OF ENGLAND'",
+        "*TRUMP SAYS FED INDEPENDENT AND HE DOESN'T SPEAK TO THEM: FBN"
+      ],
+      "counter_examples": null,
+      "confidence": 0.9,
+      "frequency": 40,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R-000",
+      "label": "0",
+      "pattern_description": "Neutral headlines reporting on central bank actions, announcements, or economic conditions without expressing support or criticism; includes routine statements, policy announcements, or factual reporting without opinion on independence.",
+      "conditions": [
+        "Use when headline neutrally reports central bank actions or economic conditions without opinion on independence.",
+        "Includes policy announcements, factual economic reports, or routine statements.",
+        "Includes statements about inflation, interest rates, or economic outlook without judgment."
+      ],
+      "indicators": [
+        "neutral report",
+        "policy announcement",
+        "economic condition",
+        "inflation data",
+        "interest rates unchanged",
+        "fed path",
+        "fed making decisions",
+        "government announcements",
+        "fed tools to fight inflation",
+        "fed independent operation",
+        "fed focused on inflation",
+        "fed on path to soft landing"
+      ],
+      "examples": [
+        "*HUNT: STILL MORE WORK TO DO IN CUTTING INFLATION",
+        "*OBAMA TO MEET WITH FED CHAIR YELLEN ON U.S. ECONOMY MONDAY",
+        "*FED APPEARS TO BE ON PATH FOR 'SOFTISH' LANDING: ROUSE",
+        "*HAMMOND: U.K. HAS RIGOROUS PROCESS ON BOE APPOINTMENTS",
+        "*SUNAK SAYS `INFLATION IS THE ENEMY THAT WE NEED TO CONQUER'",
+        "*YELLEN SAYS SHE TRUSTS THE FED TO MAKE THE RIGHT DECISIONS",
+        "*UK'S HUNT: PERIOD OF HIGH INFLATION `WELL AND TRULY BEHIND US'",
+        "*DARLING SAYS FSA, BANK OF ENGLAND NEED `RIGHT TOOLS' FOR JOB",
+        "*OSBORNE REAFFIRMS CPI INFLATION TARGET OF 2%",
+        "*BIDEN: APPROPRIATE FOR FED TO 'RECALIBRATE' SUPPORT AS NEEDED"
+      ],
+      "counter_examples": null,
+      "confidence": 0.95,
+      "frequency": 150,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R001",
+      "label": "1",
+      "pattern_description": "Headlines mildly corrosive or mildly critical of central bank independence; expressing mild dissatisfaction, calls for rate cuts, or mild criticism without harsh language or threats.",
+      "conditions": [
+        "Use when headline expresses mild dissatisfaction or mild criticism of central bank or Fed policies.",
+        "Includes calls for rate cuts or mild criticism of leadership without harsh language.",
+        "Includes disappointment or mild disagreement with Fed actions."
+      ],
+      "indicators": [
+        "mild criticism",
+        "calls for rate cuts",
+        "displeased with fed",
+        "fed mistakes",
+        "fed should lower rates",
+        "fed too slow",
+        "fed not doing enough",
+        "fed rate too high",
+        "rate cut needed",
+        "fed should ease",
+        "mild dissatisfaction"
+      ],
+      "examples": [
+        "*TRUMP FED PICK MOORE SAYS `I'M ALL IN' DESPITE SENATE PUSHBACK",
+        "*TRUMP: FED SHOULD GET RATE DOWN TO LEVELS OF COMPETITOR NATIONS",
+        "*TRUMP SAYS HE'S NOT HAPPY WITH THE FED'S INTEREST RATES",
+        "*TRUMP REITERATES THAT FED HAS MADE MISTAKES ON RATE POLICY:CNBC",
+        "*OBAMA SAYS FED POLICY ON INTEREST RATES HELPING HOUSING MARKET",
+        "*KUDLOW: FED HAS HANDLED TRANSITION FROM ULTRA-EASY MONEY",
+        "*TRUMP SAYS FED PUTTING U.S. AT COMPETITIVE DISADVANTAGE",
+        "*TRUMP: POWELL MUST NOW LOWER THE RATE",
+        "*HASSETT: I DON'T COMMENT ON FED RATES",
+        "*KUDLOW SAYS HOPEFULLY NOW FED WILL STEP ASIDE",
+        "*TRUMP SAYS FED 'EVEN CONSIDERING' RATE HIKE IS 'INCREDIBLE'",
+        "*BIDEN: SUPPORT FED'S INDEPENDENCE",
+        "*TRUMP SAYS HE DOESN'T PLAN TO REMOVE FED CHAIR POWELL",
+        "*CAMERON: BALLS ATTACK ON KING SHOWS COMPLETE LACK OF JUDGEMENT"
+      ],
+      "counter_examples": null,
+      "confidence": 0.9,
+      "frequency": 100,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R002",
+      "label": "2",
+      "pattern_description": "Headlines moderately corrosive or critical of central bank independence; expressing stronger criticism, blaming Fed for economic problems, calling for significant policy changes or explicitly stating failures.",
+      "conditions": [
+        "Use when headline expresses stronger criticism or blame towards the Fed or central bank.",
+        "Includes calls for significant policy changes or explicit statements of failure.",
+        "Includes accusations of Fed mistakes affecting economy negatively."
+      ],
+      "indicators": [
+        "strong criticism",
+        "blame fed",
+        "fed mistakes",
+        "fed failures",
+        "fed rate hikes hurting economy",
+        "fed should cut rates now",
+        "fed not acting",
+        "fed derelict in duties",
+        "fed putting us at disadvantage"
+      ],
+      "examples": [
+        "*TRUMP SAYS U.S. PROBLEM IS FED, NOT CHINA",
+        "*TRUMP: EVERYONE IS CUTTING BUT THE FED",
+        "*TRUMP: FED IS THE ONLY PROBLEM FOR THE ECONOMY",
+        "*TRUMP SAYS FED RATES WAY TOO HIGH, ATTACKS QUANTITATIVE TIGHTENING",
+        "*FURMAN SAYS AUDITING FEDERAL RESERVE WOULD BE `DANGEROUS'",
+        "*TRUMP SAYS FED IS `DERELICT IN ITS DUTIES' IF RATES NOT LOWERED",
+        "*TRUMP: THE FED SHOULD GET SMART & LOWER THE RATE",
+        "*TRUMP: NEGATIVE INTEREST RATES, DOLLAR DISCUSSED WITH POWELL",
+        "*TRUMP: THE FED WRONG `SO OFTEN'",
+        "*TRUMP REITERATES THE FED SHOULD LOWER INTEREST RATES"
+      ],
+      "counter_examples": null,
+      "confidence": 0.9,
+      "frequency": 40,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R003",
+      "label": "3",
+      "pattern_description": "Headlines strongly corrosive of central bank independence; explicitly attacking independence, threatening removal of officials, or harshly criticizing leadership with strong language.",
+      "conditions": [
+        "Use when headline contains explicit threats to remove Fed officials or harsh attacks on central bank independence.",
+        "Includes strong language insulting Fed chair or attacking independence vehemently."
+      ],
+      "indicators": [
+        "threats to remove fed officials",
+        "harsh insults to fed chair",
+        "explicit attacks on independence",
+        "fed is fool",
+        "fed must be replaced",
+        "fed leadership failure"
+      ],
+      "examples": [
+        "*TRUMP BELIEVES HE HAS THE AUTHORITY TO REPLACE POWELL AT FED",
+        "*TRUMP: \u00e2\u20ac\u0153TOO LATE\u00e2\u20ac\u009d JEROME POWELL IS FOOL, WHO DOESN\u00e2\u20ac\u2122T HAVE CLUE"
+      ],
+      "counter_examples": null,
+      "confidence": 0.95,
+      "frequency": 5,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    },
+    {
+      "rule_id": "R-9999",
+      "label": "-9999",
+      "pattern_description": "Headlines unrelated or neutral with no direct reference or opinion on central bank independence; includes statements about individuals, unrelated economic topics, or general news without central bank context.",
+      "conditions": [
+        "Use when headline is unrelated to central bank independence or monetary policy.",
+        "Includes statements about individuals, nominations, unrelated economic or political news.",
+        "No expression of opinion on Fed independence or policy."
+      ],
+      "indicators": [
+        "fed nominee news",
+        "political appointments",
+        "general economic news unrelated to fed",
+        "comments on individuals unrelated to fed independence",
+        "statements about other economic topics without fed reference"
+      ],
+      "examples": [
+        "*LEVITT SAYS YELLEN WON'T NECESSARILY BE OBAMA'S FED PICK",
+        "*CARNEY: ALSO ACCEPTED INVITATION FROM STARMER TO VISIT UK",
+        "*TRUMP FED NOMINEE BARR NEEDS TO BE CONFIRMED BY SENATE: ROUSE",
+        "*BIDEN PICKS RASKIN TO BE FED'S VICE CHAIR OF SUPERVISION",
+        "*TRUMP IS SAID TO HAVE MET WITH OTHER FED CHAIR CONTENDERS"
+      ],
+      "counter_examples": null,
+      "confidence": 0.95,
+      "frequency": 150,
+      "edge_cases": null,
+      "creation_timestamp": "2025-06-10T16:10:47.257201",
+      "last_updated": "2025-06-10T16:10:47.257201",
+      "source_data_hash": null
+    }
+  ],
+  "general_guidelines": [
+    "Label should be assigned based on the overall sentiment and content of the headline towards central bank independence and policy.",
+    "If the headline expresses strong support, use negative labels with magnitude indicating strength (-3 strongest).",
+    "Neutral factual reporting without opinion should be labeled 0.",
+    "Mild to strong criticism should be labeled with positive values 1 to 3 based on severity.",
+    "Use -9999 for unrelated headlines or those not discussing central bank independence or policy.",
+    "When in doubt, consider the presence of indicators and the context of the statement."
+  ],
+  "disambiguation_rules": [
+    "Statements about Fed nominees or appointments without opinion on independence should be labeled -9999.",
+    "Expressions of mild respect or trust without strong praise are labeled -1.",
+    "Mild criticism or calls for rate cuts without harsh language are labeled 1.",
+    "Stronger criticism or blame with explicit failures or economic harm are labeled 2.",
+    "Explicit threats or harsh insults to Fed leadership are labeled 3.",
+    "Neutral economic reports or policy announcements without opinion are labeled 0."
+  ],
+  "quality_checks": [
+    "Ensure labels reflect the tone and strength of opinion expressed towards central bank independence.",
+    "Verify that unrelated political or economic news is labeled -9999.",
+    "Check for consistency in labeling mild vs strong criticism or support.",
+    "Annotators should read the entire headline to capture nuanced sentiment."
+  ],
+  "version": "1.0.9",
+  "creation_timestamp": "2025-06-10T15:56:47.134175",
+  "last_updated": "2025-06-10T16:10:47.257189",
+  "statistics": null
+}
