@@ -20,6 +20,9 @@ class LabelingConfig(BaseModel):
     temperature: float = Field(0.7, description="Sampling temperature")
     max_tokens: int | None = Field(None, description="Maximum tokens in response")
     max_examples: int = Field(5, description="Maximum examples to retrieve")
+    use_validation: bool = Field(True, description="Use structured output validation with retry")
+    validation_max_retries: int = Field(3, description="Maximum validation retry attempts")
+    allowed_labels: list[str] | None = Field(None, description="Allowed label values for validation")
 
 
 class BatchConfig(BaseModel):

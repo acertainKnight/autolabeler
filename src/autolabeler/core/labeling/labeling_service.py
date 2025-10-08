@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from collections import deque
 import json
 
@@ -18,6 +18,7 @@ from ..base import BatchProcessor, ConfigurableComponent, ProgressTracker
 from ..configs import BatchConfig, LabelingConfig
 from ..knowledge import KnowledgeStore, PromptManager
 from ..llm_providers import get_llm_client
+from ..validation import StructuredOutputValidator, create_field_value_validator
 
 
 class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
@@ -43,6 +44,7 @@ class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
         self.config = config or LabelingConfig()
         self.settings = settings
         self.client_cache: dict[str, BaseChatModel] = {}
+        self.validator_cache: dict[str, StructuredOutputValidator] = {}
 
         # Initialize core components
         self.knowledge_store = KnowledgeStore(
@@ -69,6 +71,27 @@ class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
             logger.info(f"Creating new LLM client for config: {config_key}")
             self.client_cache[config_key] = get_llm_client(self.settings, config)
         return self.client_cache[config_key]
+
+    def _get_validator_for_config(self, config: LabelingConfig) -> StructuredOutputValidator:
+        """Get or create a cached validator for a specific configuration."""
+        config_key = config.model_dump_json()
+        if config_key not in self.validator_cache:
+            logger.info(f"Creating new validator for config with max_retries={config.validation_max_retries}")
+            client = self._get_client_for_config(config)
+            self.validator_cache[config_key] = StructuredOutputValidator(
+                client=client,
+                max_retries=config.validation_max_retries,
+            )
+        return self.validator_cache[config_key]
+
+    def _get_validation_rules(self, config: LabelingConfig) -> list[Callable]:
+        """Build validation rules based on configuration."""
+        rules = []
+        if config.allowed_labels:
+            rules.append(
+                create_field_value_validator("label", set(config.allowed_labels))
+            )
+        return rules
 
     def _load_template(self, template_path: Path | None) -> Template:
         """Load a Jinja2 template from a given path or use the default."""
@@ -354,16 +377,30 @@ class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
         """Label a single text with the configured settings."""
         config = config or self.config
         template = self._load_template(template_path) if template_path else self.template
-        llm_client = self._get_client_for_config(config)
 
         rendered_prompt, prompt_id = self._prepare_prompt(
             text, config, template, ruleset
         )
 
         try:
-            # Get structured prediction with function_calling for OpenRouter compatibility
-            structured_llm = llm_client.with_structured_output(LabelResponse, method="function_calling")
-            response = structured_llm.invoke(rendered_prompt)
+            if config.use_validation:
+                # Use validation with automatic retry
+                validator = self._get_validator_for_config(config)
+                validation_rules = self._get_validation_rules(config)
+
+                response = validator.validate_and_retry(
+                    prompt=rendered_prompt,
+                    response_model=LabelResponse,
+                    validation_rules=validation_rules,
+                    method="function_calling",
+                )
+            else:
+                # Legacy path without validation
+                llm_client = self._get_client_for_config(config)
+                structured_llm = llm_client.with_structured_output(
+                    LabelResponse, method="function_calling"
+                )
+                response = structured_llm.invoke(rendered_prompt)
 
             self.prompt_manager.update_result(
                 prompt_id, successful=True, confidence=response.confidence
@@ -575,6 +612,36 @@ class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
 
         return results_df
 
+    def get_validation_stats(self) -> dict[str, Any]:
+        """Get validation statistics from all cached validators."""
+        if not self.validator_cache:
+            return {"message": "No validators have been used yet"}
+
+        all_stats = {}
+        for config_key, validator in self.validator_cache.items():
+            stats = validator.get_statistics()
+            all_stats[config_key] = stats
+
+        # Aggregate statistics across all validators
+        total_attempts = sum(s["total_attempts"] for s in all_stats.values())
+        total_successes = sum(s["successful_validations"] for s in all_stats.values())
+        total_failures = sum(s["failed_validations"] for s in all_stats.values())
+
+        aggregate = {
+            "total_validation_attempts": total_attempts,
+            "total_successful_validations": total_successes,
+            "total_failed_validations": total_failures,
+            "overall_success_rate": (
+                (total_successes / (total_successes + total_failures) * 100)
+                if (total_successes + total_failures) > 0
+                else 0.0
+            ),
+            "validators_count": len(self.validator_cache),
+            "per_validator_stats": all_stats,
+        }
+
+        return aggregate
+
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about the labeling service."""
         stats = {
@@ -582,6 +649,7 @@ class LabelingService(ConfigurableComponent, ProgressTracker, BatchProcessor):
             "knowledge_base_stats": self.knowledge_store.get_stats(),
             "prompt_analytics": self.prompt_manager.get_analytics(),
             "progress_info": self.get_progress_info(),
+            "validation_stats": self.get_validation_stats(),
         }
 
         return stats
