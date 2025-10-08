@@ -441,6 +441,86 @@ result = service.label_text_ensemble(
 )
 ```
 
+### MultiAgentService (Phase 3)
+Coordinates specialized agents for complex labeling tasks.
+
+```python
+from autolabeler.agents import MultiAgentService
+
+service = MultiAgentService(settings)
+results = service.label_with_agents(
+    df, text_column="text", task_type="ner"
+)
+```
+
+Features:
+- Task routing to specialized agents
+- Agent coordination and load balancing
+- Performance monitoring and optimization
+
+### DriftDetectionService (Phase 3)
+Monitors data distribution changes over time.
+
+```python
+from autolabeler.drift import DriftDetectionService
+
+detector = DriftDetectionService(drift_config)
+report = detector.detect_drift(
+    reference_data=train_df,
+    current_data=test_df
+)
+```
+
+Features:
+- PSI and KS statistical tests
+- Embedding-based drift detection
+- Automated alerting and monitoring
+
+### STAPLEService (Phase 3)
+Ensemble predictions using STAPLE algorithm.
+
+```python
+from autolabeler.ensemble import STAPLEService
+
+staple = STAPLEService()
+consensus = staple.aggregate_labels(predictions_list)
+```
+
+Features:
+- Weighted voting based on annotator performance
+- Confidence scoring for predictions
+- Disagreement analysis
+
+### DPOAlignmentService (Phase 3)
+Fine-tune models with Direct Preference Optimization.
+
+```python
+from autolabeler.alignment import DPOAlignmentService
+
+dpo = DPOAlignmentService(model_name="meta-llama/Llama-2-7b-hf")
+dpo.train(preference_dataset, epochs=3)
+```
+
+Features:
+- RLHF alignment without reward modeling
+- Preference learning from human feedback
+- Model fine-tuning and evaluation
+
+### ConstitutionalService (Phase 3)
+Apply constitutional principles to model outputs.
+
+```python
+from autolabeler.constitutional import ConstitutionalService
+
+constitutional = ConstitutionalService(principles=["harmless", "helpful"])
+aligned_output = constitutional.apply_principles(raw_output)
+```
+
+Features:
+- Principle-based output filtering
+- Automated compliance validation
+- Ethical constraint enforcement
+
 ## API Reference
 
 ### Main Interface
