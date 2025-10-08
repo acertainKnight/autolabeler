@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -124,3 +124,210 @@ class ComponentConfig(BaseModel):
         """Pydantic configuration."""
 
         extra = "allow"  # Allow additional fields
+
+
+class DSPyOptimizationConfig(BaseModel):
+    """Configuration for DSPy prompt optimization."""
+
+    enabled: bool = Field(False, description="Enable DSPy optimization")
+    model_name: str = Field('gpt-4o-mini', description="Model for optimization")
+    num_candidates: int = Field(10, description="Number of prompt candidates")
+    num_trials: int = Field(20, description="Number of optimization trials")
+    max_bootstrapped_demos: int = Field(4, description="Max bootstrapped demos")
+    max_labeled_demos: int = Field(8, description="Max labeled demos")
+    init_temperature: float = Field(1.0, description="Initial temperature")
+    metric_threshold: float = Field(0.8, description="Success threshold")
+    cache_optimized_prompts: bool = Field(True, description="Cache optimized prompts")
+
+
+class AdvancedRAGConfig(BaseModel):
+    """Configuration for advanced RAG methods."""
+
+    rag_mode: str = Field('traditional', description="RAG mode: traditional, graph, or raptor")
+
+    # GraphRAG settings
+    graph_similarity_threshold: float = Field(0.7, description="Similarity threshold for graph edges")
+    graph_max_neighbors: int = Field(10, description="Max neighbors per graph node")
+    graph_use_communities: bool = Field(True, description="Use community detection")
+    graph_pagerank_alpha: float = Field(0.85, description="PageRank damping factor")
+
+    # RAPTOR settings
+    raptor_max_tree_depth: int = Field(3, description="Maximum tree depth for RAPTOR")
+    raptor_clustering_threshold: float = Field(0.5, description="Clustering threshold")
+    raptor_min_cluster_size: int = Field(3, description="Minimum cluster size")
+    raptor_summary_length: int = Field(100, description="Summary length in tokens")
+    raptor_use_multi_level: bool = Field(True, description="Use multi-level retrieval")
+
+    # Auto-build settings
+    auto_build_on_startup: bool = Field(False, description="Auto-build advanced indices on startup")
+    rebuild_interval_hours: int | None = Field(None, description="Auto-rebuild interval")
+
+
+class ActiveLearningConfig(BaseModel):
+    """Configuration for active learning."""
+
+    # Strategy selection
+    strategy: Literal["uncertainty", "diversity", "committee", "hybrid"] = Field(
+        "hybrid",
+        description="Active learning sampling strategy"
+    )
+
+    # Uncertainty parameters
+    uncertainty_method: Literal["least_confident", "margin", "entropy"] = Field(
+        "least_confident",
+        description="Method for calculating uncertainty"
+    )
+
+    # Diversity parameters
+    embedding_model: str = Field(
+        "all-MiniLM-L6-v2",
+        description="Embedding model for diversity sampling"
+    )
+
+    # Hybrid parameters
+    hybrid_alpha: float = Field(
+        0.7,
+        ge=0.0,
+        le=1.0,
+        description="Weight for uncertainty in hybrid strategy (1-alpha for diversity)"
+    )
+
+    # Sampling parameters
+    batch_size: int = Field(
+        50,
+        gt=0,
+        description="Number of samples to select per iteration"
+    )
+    initial_seed_size: int = Field(
+        100,
+        gt=0,
+        description="Initial seed dataset size"
+    )
+    text_column: str = Field(
+        "text",
+        description="Column containing text to label"
+    )
+
+    # Stopping criteria
+    max_iterations: int = Field(
+        20,
+        gt=0,
+        description="Maximum active learning iterations"
+    )
+    max_budget: float = Field(
+        100.0,
+        gt=0,
+        description="Maximum budget in USD"
+    )
+    target_accuracy: float = Field(
+        0.95,
+        ge=0.0,
+        le=1.0,
+        description="Target accuracy to reach"
+    )
+    patience: int = Field(
+        3,
+        gt=0,
+        description="Iterations without improvement before stopping"
+    )
+    improvement_threshold: float = Field(
+        0.01,
+        gt=0,
+        description="Minimum improvement considered significant"
+    )
+    uncertainty_threshold: float = Field(
+        0.1,
+        ge=0.0,
+        le=1.0,
+        description="Stop if pool uncertainty below this threshold"
+    )
+
+    # Human-in-the-loop
+    enable_human_review: bool = Field(
+        False,
+        description="Enable human review for selected samples"
+    )
+    human_review_confidence_threshold: float = Field(
+        0.5,
+        ge=0.0,
+        le=1.0,
+        description="Send samples below this confidence to human review"
+    )
+
+
+class WeakSupervisionConfig(BaseModel):
+    """Configuration for weak supervision."""
+
+    # Aggregation method
+    aggregation_method: Literal["majority", "snorkel", "flyingsquid"] = Field(
+        "snorkel",
+        description="Label aggregation method"
+    )
+
+    # Snorkel parameters
+    n_epochs: int = Field(
+        500,
+        gt=0,
+        description="Training epochs for Snorkel label model"
+    )
+    learning_rate: float = Field(
+        0.01,
+        gt=0,
+        description="Learning rate for label model"
+    )
+
+    # LF generation parameters
+    enable_lf_generation: bool = Field(
+        True,
+        description="Enable LLM-based LF generation"
+    )
+    num_generated_lfs: int = Field(
+        10,
+        gt=0,
+        description="Number of LFs to generate with LLM"
+    )
+    lf_generation_model: str = Field(
+        "gpt-4o-mini",
+        description="Model for LF generation"
+    )
+
+    # Quality thresholds
+    min_lf_coverage: float = Field(
+        0.05,
+        ge=0.0,
+        le=1.0,
+        description="Minimum coverage for LF to be kept"
+    )
+    min_lf_accuracy: float = Field(
+        0.55,
+        ge=0.0,
+        le=1.0,
+        description="Minimum accuracy for LF to be kept (if dev set available)"
+    )
+    max_lf_conflicts: float = Field(
+        0.5,
+        ge=0.0,
+        le=1.0,
+        description="Maximum conflict rate for LF"
+    )
+
+    # Processing
+    batch_size: int = Field(
+        1000,
+        gt=0,
+        description="Batch size for applying LFs"
+    )
+    text_column: str = Field(
+        "text",
+        description="Column containing text"
+    )
+
+    # Output
+    save_label_matrix: bool = Field(
+        True,
+        description="Save label matrix for debugging"
+    )
+    save_lf_analysis: bool = Field(
+        True,
+        description="Save LF analysis report"
+    )
