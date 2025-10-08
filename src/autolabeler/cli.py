@@ -323,6 +323,233 @@ def label(
     "--input-file",
     required=True,
     type=click.Path(path_type=Path),
+    help="Path to the input CSV or Parquet file.",
+)
+@click.option(
+    "--output-file",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Path to save the labeled output.",
+)
+@click.option(
+    "--text-column", required=True, help="Name of the column containing text to label."
+)
+@click.option(
+    "--tasks",
+    required=True,
+    help="Comma-separated task names (e.g., 'relevancy,sentiment').",
+)
+@click.option(
+    "--task-configs",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="JSON file with task configurations (labels and initial principles).",
+)
+@click.option(
+    "--confidence-threshold",
+    type=float,
+    default=0.7,
+    help="Threshold for identifying uncertain predictions (default: 0.7).",
+)
+@click.option(
+    "--enable-rule-evolution",
+    is_flag=True,
+    help="Enable automatic rule improvement based on uncertain predictions.",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=50,
+    help="Number of rows to process per batch (default: 50).",
+)
+@click.option("--model-name", help="Override LLM model name.")
+@click.option(
+    "--temperature",
+    type=float,
+    default=0.1,
+    help="LLM temperature for classification (default: 0.1).",
+)
+@click.option(
+    "--enforcement-level",
+    type=click.Choice(["strict", "moderate", "lenient"]),
+    default="strict",
+    help="Constitutional principle enforcement level (default: strict).",
+)
+def label_multi(
+    dataset_name: str,
+    input_file: Path,
+    output_file: Path,
+    text_column: str,
+    tasks: str,
+    task_configs: Path,
+    confidence_threshold: float,
+    enable_rule_evolution: bool,
+    batch_size: int,
+    model_name: str | None,
+    temperature: float,
+    enforcement_level: str,
+):
+    """Label dataset with multiple classification tasks and optional rule evolution.
+
+    This command performs multi-label classification where each observation receives
+    multiple simultaneous classifications (e.g., relevancy AND sentiment together).
+
+    The task_configs JSON file should have this structure:
+    {
+      "task_name": {
+        "labels": ["label1", "label2", ...],
+        "principles": ["rule1", "rule2", ...]
+      },
+      ...
+    }
+
+    Example:
+        autolabeler label-multi \\
+            --dataset-name "customer_feedback" \\
+            --input-file data.csv \\
+            --output-file labeled.csv \\
+            --text-column "feedback_text" \\
+            --tasks "relevancy,sentiment" \\
+            --task-configs configs.json \\
+            --enable-rule-evolution \\
+            --batch-size 50
+    """
+    import json
+
+    from .active_learning import RuleEvolutionService
+    from .agents import MultiAgentService
+    from .constitutional import ConstitutionalService
+
+    # Parse tasks
+    task_list = [t.strip() for t in tasks.split(",")]
+    logger.info(f"Starting multi-label classification for tasks: {task_list}")
+
+    # Load task configurations
+    if not task_configs.exists():
+        logger.error(f"Task config file not found: {task_configs}")
+        return
+
+    with open(task_configs) as f:
+        task_config_data = json.load(f)
+
+    # Validate that all requested tasks have configs
+    missing_tasks = [t for t in task_list if t not in task_config_data]
+    if missing_tasks:
+        logger.error(f"Missing configurations for tasks: {missing_tasks}")
+        return
+
+    # Initialize settings
+    settings = Settings()
+    if model_name:
+        settings.llm_model = model_name
+    settings.temperature = temperature
+
+    logger.info(f"Using LLM: {settings.llm_model} (provider: {settings.llm_provider})")
+
+    # Load data
+    df = _load_data(input_file)
+    logger.info(f"Loaded {len(df)} rows from {input_file}")
+
+    # Initialize services
+    multi_agent = MultiAgentService(settings, task_config_data)
+    logger.info("MultiAgentService initialized")
+
+    # Extract initial principles for constitutional service
+    initial_principles = {
+        task: config.get("principles", [])
+        for task, config in task_config_data.items()
+    }
+    constitutional = ConstitutionalService(
+        principles=initial_principles, enforcement_level=enforcement_level
+    )
+    logger.info(f"ConstitutionalService initialized with {enforcement_level} enforcement")
+
+    # Initialize rule evolution service if enabled
+    rule_evolution = None
+    if enable_rule_evolution:
+        rule_evolution = RuleEvolutionService(
+            initial_rules=initial_principles,
+            improvement_strategy="feedback_driven",
+            settings=settings,
+        )
+        logger.info("RuleEvolutionService initialized")
+
+    # Process in batches with rule evolution
+    all_results = []
+    total_batches = (len(df) + batch_size - 1) // batch_size
+
+    for batch_idx in range(total_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min(start_idx + batch_size, len(df))
+        batch_df = df.iloc[start_idx:end_idx].copy()
+
+        logger.info(
+            f"Processing batch {batch_idx + 1}/{total_batches} (rows {start_idx}-{end_idx})"
+        )
+
+        # Label batch with multi-agent service
+        labeled_batch = multi_agent.label_with_agents(batch_df, text_column, task_list)
+        all_results.append(labeled_batch)
+
+        # Rule evolution: check for uncertain predictions
+        if enable_rule_evolution and batch_idx < total_batches - 1:
+            # Identify uncertain predictions
+            uncertain_rows = []
+            for task in task_list:
+                conf_col = f"confidence_{task}"
+                uncertain = labeled_batch[labeled_batch[conf_col] < confidence_threshold]
+                uncertain_rows.append(uncertain)
+
+            if uncertain_rows:
+                # Combine all uncertain predictions
+                feedback_df = pd.concat(uncertain_rows, ignore_index=True)
+                if len(feedback_df) > 0:
+                    logger.info(
+                        f"Found {len(feedback_df)} uncertain predictions, improving rules..."
+                    )
+
+                    # Improve rules
+                    current_rules = constitutional.get_principles()
+                    updated_rules = rule_evolution.improve_rules(
+                        current_rules, feedback_df
+                    )
+
+                    # Update services with new rules
+                    constitutional.update_principles(updated_rules)
+                    multi_agent.update_task_configs(updated_rules)
+
+                    logger.info("Rules updated for next batch")
+
+    # Combine all batches
+    final_df = pd.concat(all_results, ignore_index=True)
+    logger.info(f"Completed multi-label classification for {len(final_df)} rows")
+
+    # Log final statistics
+    if enable_rule_evolution:
+        stats = rule_evolution.get_improvement_stats()
+        logger.info(f"Rule evolution stats: {stats}")
+
+    # Log confidence statistics per task
+    for task in task_list:
+        conf_col = f"confidence_{task}"
+        mean_conf = final_df[conf_col].mean()
+        low_conf_count = (final_df[conf_col] < confidence_threshold).sum()
+        logger.info(
+            f"Task '{task}': mean confidence={mean_conf:.3f}, "
+            f"uncertain predictions={low_conf_count}"
+        )
+
+    # Save results
+    _save_data(final_df, output_file)
+    logger.info(f"Results saved to {output_file}")
+
+
+@cli.command()
+@click.option("--dataset-name", required=True, help="A unique name for your project.")
+@click.option(
+    "--input-file",
+    required=True,
+    type=click.Path(path_type=Path),
     help="Path to the input file.",
 )
 @click.option(
