@@ -40,6 +40,11 @@ dependencies = [
     'python-louvain>=0.16',  # GraphRAG community detection
     'umap-learn>=0.5.0',  # RAPTOR dimensionality reduction
     'rank-bm25>=0.2.2',  # Hybrid search BM25 component
+
+    # Phase 3 dependencies
+    'langgraph>=0.2.0',  # Multi-agent orchestration
+    'langsmith>=0.2.0',  # Agent monitoring
+    'evidently>=0.5.8',  # Drift detection
 ]
 
 [project.scripts]
@@ -90,6 +95,22 @@ phase2 = [
     'dvc>=3.0.0',
 ]
 
+# Phase 3 optional dependencies (DPO/RLHF - requires GPU)
+dpo = [
+    'transformers>=4.46.0',  # Model loading and training
+    'trl>=0.12.1',  # DPO trainer
+    'peft>=0.13.0',  # LoRA for efficient fine-tuning
+    'accelerate>=1.2.0',  # Distributed training utilities
+    'torch>=2.0.0',  # PyTorch backend
+]
+
+# Install all Phase 3 features (without DPO/RLHF)
+phase3 = [
+    'langgraph>=0.2.0',
+    'langsmith>=0.2.0',
+    'evidently>=0.5.8',
+]
+
 # Complete installation with all features
 all = [
     'streamlit>=1.43.0',
@@ -99,6 +120,13 @@ all = [
     'dvc-s3>=3.0.0',
     'dvc-azure>=3.0.0',
     'dvc-gs>=3.0.0',
+    'langgraph>=0.2.0',
+    'langsmith>=0.2.0',
+    'evidently>=0.5.8',
+    'transformers>=4.46.0',
+    'trl>=0.12.1',
+    'peft>=0.13.0',
+    'accelerate>=1.2.0',
 ]
 
 [tool.setuptools.packages.find]
