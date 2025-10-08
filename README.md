@@ -42,6 +42,13 @@ AutoLabeler v2.0 features a completely refactored, modular architecture that mai
 - **Confidence Scoring**: Each prediction includes calibrated confidence scores
 - **Incremental Learning**: Knowledge base grows and improves over time
 
+### 🚀 Advanced Features (Phase 3)
+- **Multi-Agent Architecture**: Specialized agents for different annotation tasks (NER, relations, sentiment) with intelligent routing
+- **Drift Detection**: Production monitoring with PSI, KS tests, and embedding-based drift analysis
+- **STAPLE Ensemble**: Weighted multi-annotator consensus using EM algorithm for improved accuracy
+- **DPO/RLHF Alignment**: Task-specific model fine-tuning with Direct Preference Optimization
+- **Constitutional AI**: Principled annotation consistency with automated violation detection and revision
+
 ### 🔧 Technical Features
 - **Modular Architecture**: Clean separation of concerns with specialized services
 - **Async Support**: Native async/await support for high-throughput applications
