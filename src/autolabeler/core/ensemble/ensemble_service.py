@@ -651,3 +651,198 @@ class EnsembleService(ConfigurableComponent, BatchProcessor):
 
         except Exception as e:
             logger.warning(f"Could not load ensemble state: {e}")
+
+
+class STAPLEEnsemble:
+    """
+    STAPLE (Simultaneous Truth and Performance Level Estimation) algorithm.
+
+    Multi-annotator fusion that estimates ground truth and annotator quality
+    via Expectation-Maximization algorithm.
+
+    Example:
+        >>> staple = STAPLEEnsemble(num_classes=3)
+        >>> annotations = np.array([[0, 0, 1], [1, 1, 1], [0, 1, 0]])  # 3 items, 3 annotators
+        >>> ground_truth, quality = staple.estimate_ground_truth(annotations)
+    """
+
+    def __init__(self, num_classes: int):
+        """
+        Initialize STAPLE ensemble.
+
+        Args:
+            num_classes: Number of label classes.
+        """
+        self.num_classes = num_classes
+        self.annotator_quality: dict[int, dict[str, np.ndarray]] = {}
+
+    def estimate_ground_truth(
+        self,
+        annotations: np.ndarray,
+        max_iterations: int = 50,
+        convergence_threshold: float = 1e-5,
+    ) -> tuple[np.ndarray, dict[int, dict[str, np.ndarray]]]:
+        """
+        Estimate ground truth and annotator quality via EM algorithm.
+
+        Args:
+            annotations: Annotation matrix (n_items, n_annotators).
+                         Use -1 for missing annotations.
+            max_iterations: Maximum EM iterations.
+            convergence_threshold: Convergence threshold for ground truth changes.
+
+        Returns:
+            Tuple of (ground_truth array, annotator_quality dict).
+        """
+        n_items, n_annotators = annotations.shape
+
+        if n_items == 0 or n_annotators == 0:
+            raise ValueError("Empty annotation matrix")
+
+        # Initialize ground truth estimates (majority vote)
+        ground_truth = self._initialize_ground_truth(annotations)
+
+        # Initialize annotator quality parameters
+        self._initialize_annotator_quality(n_annotators)
+
+        # EM algorithm
+        for iteration in range(max_iterations):
+            old_ground_truth = ground_truth.copy()
+
+            # E-step: Update ground truth estimates
+            ground_truth = self._update_ground_truth(annotations)
+
+            # M-step: Update annotator quality parameters
+            self._update_annotator_quality(annotations, ground_truth)
+
+            # Check convergence
+            changes = np.sum(ground_truth != old_ground_truth)
+            if changes < convergence_threshold * n_items:
+                logger.debug(f"STAPLE converged after {iteration + 1} iterations")
+                break
+
+        return ground_truth, self.annotator_quality
+
+    def _initialize_ground_truth(self, annotations: np.ndarray) -> np.ndarray:
+        """Initialize ground truth with majority vote."""
+        n_items = annotations.shape[0]
+        ground_truth = np.zeros(n_items, dtype=int)
+
+        for item_idx in range(n_items):
+            valid_annotations = annotations[item_idx][annotations[item_idx] >= 0]
+            if len(valid_annotations) > 0:
+                # Majority vote
+                ground_truth[item_idx] = np.bincount(valid_annotations).argmax()
+
+        return ground_truth
+
+    def _initialize_annotator_quality(self, n_annotators: int) -> None:
+        """Initialize annotator quality with optimistic priors."""
+        for annotator_idx in range(n_annotators):
+            self.annotator_quality[annotator_idx] = {
+                "sensitivity": np.ones(self.num_classes) * 0.99,
+                "specificity": np.ones(self.num_classes) * 0.99,
+            }
+
+    def _update_ground_truth(self, annotations: np.ndarray) -> np.ndarray:
+        """E-step: Update ground truth estimates using current quality parameters."""
+        n_items, n_annotators = annotations.shape
+        ground_truth = np.zeros(n_items, dtype=int)
+
+        for item_idx in range(n_items):
+            # Calculate likelihood for each possible class
+            class_likelihoods = np.zeros(self.num_classes)
+
+            for class_idx in range(self.num_classes):
+                likelihood = 1.0
+
+                for annotator_idx in range(n_annotators):
+                    annotation = annotations[item_idx, annotator_idx]
+
+                    if annotation < 0:  # Missing annotation
+                        continue
+
+                    quality = self.annotator_quality[annotator_idx]
+
+                    if annotation == class_idx:
+                        # Annotator agreed with this class
+                        likelihood *= quality["sensitivity"][class_idx]
+                    else:
+                        # Annotator disagreed
+                        # Probability of error distributed among other classes
+                        error_prob = 1 - quality["sensitivity"][class_idx]
+                        likelihood *= error_prob / max(self.num_classes - 1, 1)
+
+                class_likelihoods[class_idx] = likelihood
+
+            # Select class with highest likelihood
+            if class_likelihoods.sum() > 0:
+                ground_truth[item_idx] = np.argmax(class_likelihoods)
+
+        return ground_truth
+
+    def _update_annotator_quality(
+        self, annotations: np.ndarray, ground_truth: np.ndarray
+    ) -> None:
+        """M-step: Update annotator quality parameters given ground truth."""
+        n_items, n_annotators = annotations.shape
+
+        for annotator_idx in range(n_annotators):
+            for class_idx in range(self.num_classes):
+                # Items where ground truth is this class
+                class_mask = ground_truth == class_idx
+                class_items = np.where(class_mask)[0]
+
+                if len(class_items) == 0:
+                    continue
+
+                # Annotator's labels for these items
+                annotator_labels = annotations[class_items, annotator_idx]
+
+                # Filter missing annotations
+                valid_mask = annotator_labels >= 0
+                annotator_labels = annotator_labels[valid_mask]
+
+                if len(annotator_labels) == 0:
+                    continue
+
+                # Sensitivity: P(annotator says class_idx | ground truth is class_idx)
+                sensitivity = np.mean(annotator_labels == class_idx)
+
+                # Update with smoothing to avoid extreme values
+                alpha = 2.0  # Pseudo-count for smoothing
+                sensitivity = (np.sum(annotator_labels == class_idx) + alpha) / (
+                    len(annotator_labels) + alpha * self.num_classes
+                )
+
+                self.annotator_quality[annotator_idx]["sensitivity"][
+                    class_idx
+                ] = sensitivity
+
+    def get_annotator_scores(self) -> pd.DataFrame:
+        """
+        Get annotator quality scores as DataFrame.
+
+        Returns:
+            DataFrame with annotator quality metrics.
+        """
+        data = []
+
+        for annotator_idx, quality in self.annotator_quality.items():
+            # Average sensitivity across classes
+            avg_sensitivity = np.mean(quality["sensitivity"])
+
+            row = {
+                "annotator_id": annotator_idx,
+                "avg_sensitivity": avg_sensitivity,
+            }
+
+            # Add per-class sensitivity
+            for class_idx in range(self.num_classes):
+                row[f"sensitivity_class_{class_idx}"] = quality["sensitivity"][
+                    class_idx
+                ]
+
+            data.append(row)
+
+        return pd.DataFrame(data).sort_values("avg_sensitivity", ascending=False)
