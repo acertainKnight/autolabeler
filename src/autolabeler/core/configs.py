@@ -331,3 +331,179 @@ class WeakSupervisionConfig(BaseModel):
         True,
         description="Save LF analysis report"
     )
+
+
+# Phase 3: Advanced Features Configurations
+
+
+class MultiAgentConfig(BaseModel):
+    """Configuration for multi-agent system."""
+
+    coordinator_id: str = Field(
+        "coordinator_main",
+        description="Coordinator identifier"
+    )
+    routing_strategy: str = Field(
+        "performance_based",
+        description="Agent routing strategy (performance_based, round_robin, random)"
+    )
+    enable_parallel: bool = Field(
+        True,
+        description="Enable parallel agent execution"
+    )
+    max_concurrent_agents: int = Field(
+        5,
+        gt=0,
+        description="Maximum concurrent agent tasks"
+    )
+    performance_window: int = Field(
+        100,
+        gt=0,
+        description="Window size for performance tracking"
+    )
+
+
+class DriftDetectionConfig(BaseModel):
+    """Configuration for drift detection."""
+
+    psi_threshold: float = Field(
+        0.2,
+        ge=0.0,
+        description="PSI threshold for significant drift"
+    )
+    statistical_alpha: float = Field(
+        0.05,
+        ge=0.0,
+        le=1.0,
+        description="Significance level for statistical tests"
+    )
+    domain_classifier_threshold: float = Field(
+        0.75,
+        ge=0.5,
+        le=1.0,
+        description="AUC threshold for domain classifier drift detection"
+    )
+    min_samples: int = Field(
+        100,
+        gt=0,
+        description="Minimum samples for reliable drift detection"
+    )
+    num_bins: int = Field(
+        10,
+        gt=1,
+        description="Number of bins for PSI calculation"
+    )
+    test_size: float = Field(
+        0.3,
+        ge=0.1,
+        le=0.5,
+        description="Test size for domain classifier"
+    )
+
+
+class DPOAlignmentConfig(BaseModel):
+    """Configuration for Direct Preference Optimization."""
+
+    base_model: str = Field(
+        description="Base model name for fine-tuning"
+    )
+    output_dir: str = Field(
+        description="Directory for saving aligned model"
+    )
+    num_epochs: int = Field(
+        3,
+        gt=0,
+        description="Number of training epochs"
+    )
+    learning_rate: float = Field(
+        5e-5,
+        gt=0,
+        description="Learning rate"
+    )
+    batch_size: int = Field(
+        4,
+        gt=0,
+        description="Training batch size"
+    )
+    gradient_accumulation_steps: int = Field(
+        4,
+        gt=0,
+        description="Gradient accumulation steps"
+    )
+    beta: float = Field(
+        0.1,
+        gt=0,
+        description="DPO regularization parameter"
+    )
+    max_length: int = Field(
+        512,
+        gt=0,
+        description="Maximum sequence length"
+    )
+    warmup_steps: int = Field(
+        100,
+        gt=0,
+        description="Warmup steps"
+    )
+    save_strategy: str = Field(
+        "epoch",
+        description="Model save strategy (epoch, steps)"
+    )
+    logging_steps: int = Field(
+        10,
+        gt=0,
+        description="Logging frequency"
+    )
+
+
+class ConstitutionalConfig(BaseModel):
+    """Configuration for Constitutional AI."""
+
+    constitution_path: str = Field(
+        description="Path to constitution JSON file"
+    )
+    max_revisions: int = Field(
+        2,
+        gt=0,
+        description="Maximum revision iterations"
+    )
+    critique_temperature: float = Field(
+        0.2,
+        ge=0,
+        le=2,
+        description="Temperature for critique generation"
+    )
+    revision_temperature: float = Field(
+        0.3,
+        ge=0,
+        le=2,
+        description="Temperature for revision generation"
+    )
+    require_unanimous_compliance: bool = Field(
+        False,
+        description="Require all principles to pass"
+    )
+
+
+class STAPLEConfig(BaseModel):
+    """Configuration for STAPLE ensemble algorithm."""
+
+    num_classes: int = Field(
+        gt=1,
+        description="Number of label classes"
+    )
+    max_iterations: int = Field(
+        50,
+        gt=0,
+        description="Maximum EM iterations"
+    )
+    convergence_threshold: float = Field(
+        1e-5,
+        gt=0,
+        description="Convergence threshold for ground truth changes"
+    )
+    min_annotators: int = Field(
+        2,
+        gt=1,
+        description="Minimum number of annotators required"
+    )
