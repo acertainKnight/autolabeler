@@ -1,0 +1,265 @@
+# Phase 2 Dependencies - DSPy Optimization & Advanced RAG
+#
+# Installation:
+#   pip install -r phase2_dependencies.txt
+#
+# Or install individually as needed
+
+# ============================================================================
+# DSPy Prompt Optimization
+# ============================================================================
+
+# Core DSPy framework
+dspy-ai>=2.5.0,<3.0.0
+
+# DSPy dependencies (usually installed automatically, but listed for reference)
+openai>=1.0.0
+anthropic>=0.15.0
+backoff>=2.2.0
+
+# Statistical testing for A/B tests
+scipy>=1.10.0,<2.0.0
+
+# ============================================================================
+# Advanced RAG - Hybrid Search
+# ============================================================================
+
+# BM25 keyword search
+rank-bm25>=0.2.2
+
+# Cross-encoder reranking
+sentence-transformers>=2.2.0,<3.0.0
+
+# ============================================================================
+# Advanced RAG - GraphRAG
+# ============================================================================
+
+# Graph construction and analysis
+networkx>=3.0,<4.0
+
+# Community detection (Louvain/Leiden algorithms)
+python-louvain>=0.16
+leidenalg>=0.10.0  # Optional, for Leiden algorithm
+
+# ============================================================================
+# Advanced RAG - RAPTOR
+# ============================================================================
+
+# Dimensionality reduction
+umap-learn>=0.5.0,<1.0.0
+
+# Clustering
+scikit-learn>=1.3.0,<2.0.0
+
+# ============================================================================
+# Optional Dependencies
+# ============================================================================
+
+# [Optional] For NER-based entity extraction in GraphRAG
+# spacy>=3.7.0
+# https://github.com/explosion/spaCy
+# Install model: python -m spacy download en_core_web_sm
+
+# [Optional] For faster similarity computations
+# faiss-gpu>=1.7.0  # If GPU available
+# numba>=0.58.0  # JIT compilation
+
+# [Optional] For visualization
+# matplotlib>=3.7.0
+# plotly>=5.17.0
+
+# ============================================================================
+# Already in Project (listed for completeness)
+# ============================================================================
+
+# Core dependencies from pyproject.toml:
+# pydantic>=2.0.0
+# pandas>=2.0.0
+# numpy>=1.24.0
+# langchain>=0.1.0
+# langchain-openai>=0.3.21
+# langchain-community>=0.3.24
+# faiss-cpu>=1.7.0
+# sentence-transformers>=4.1.0  # Note: may need to update for compatibility
+
+# ============================================================================
+# Version Compatibility Matrix
+# ============================================================================
+
+# Package               Minimum    Recommended    Notes
+# ------------------    ---------  -----------    -------------------------
+# Python                3.10       3.11           Type hints, performance
+# dspy-ai               2.5.0      2.5.x          Latest stable
+# openai                1.0.0      1.x            For DSPy OpenAI models
+# scipy                 1.10.0     1.11.x         A/B testing
+# rank-bm25             0.2.2      0.2.x          Hybrid search
+# sentence-transformers 2.2.0      2.7.x          Reranking (check faiss compat)
+# networkx              3.0        3.2.x          GraphRAG graphs
+# python-louvain        0.16       0.16           Community detection
+# umap-learn            0.5.0      0.5.x          RAPTOR clustering
+# scikit-learn          1.3.0      1.4.x          Clustering, metrics
+
+# ============================================================================
+# Installation Instructions
+# ============================================================================
+
+# Basic installation (DSPy + Hybrid RAG):
+# pip install dspy-ai>=2.5.0 rank-bm25>=0.2.2 sentence-transformers>=2.2.0 scipy>=1.10.0
+
+# Full installation (all Phase 2 features):
+# pip install dspy-ai>=2.5.0 rank-bm25>=0.2.2 sentence-transformers>=2.2.0 scipy>=1.10.0 \
+#             networkx>=3.0 python-louvain>=0.16 umap-learn>=0.5.0 scikit-learn>=1.3.0
+
+# Development installation (with optional deps):
+# pip install -r phase2_dependencies.txt
+# pip install spacy matplotlib plotly  # Optional
+
+# ============================================================================
+# Troubleshooting
+# ============================================================================
+
+# Issue: Conflicting sentence-transformers versions
+# Solution: The project uses sentence-transformers>=4.1.0, which should be compatible
+#           with the reranking models. If issues arise, pin to 2.7.0:
+#           pip install sentence-transformers==2.7.0
+
+# Issue: FAISS import errors with GPU
+# Solution: Use faiss-cpu (already in project) or install faiss-gpu separately:
+#           pip uninstall faiss-cpu
+#           pip install faiss-gpu
+
+# Issue: UMAP installation fails
+# Solution: Install from conda instead:
+#           conda install -c conda-forge umap-learn
+
+# Issue: Leidenalg requires igraph
+# Solution: Install igraph first:
+#           pip install python-igraph leidenalg
+
+# ============================================================================
+# Cost Estimates
+# ============================================================================
+
+# DSPy Optimization (per run):
+# - 20 trials with gpt-4o-mini: ~$2-3
+# - 40 trials with gpt-4o-mini: ~$4-6
+# - Using gpt-4o: ~$10-15 per 20 trials
+
+# GraphRAG (one-time build):
+# - Community summarization: ~$0.50-1.00 per 1000 examples
+# - Entity extraction (with LLM): ~$1-2 per 1000 examples
+# - Entity extraction (with spaCy): Free, local
+
+# RAPTOR (one-time build):
+# - Cluster summarization: ~$0.50-1.00 per 1000 examples
+# - No inference cost after build
+
+# Inference (all methods):
+# - No additional cost beyond baseline LLM calls
+# - Advanced RAG improves quality but uses same LLM
+
+# ============================================================================
+# Performance Benchmarks
+# ============================================================================
+
+# Typical resource usage (10k examples):
+
+# Hybrid Search:
+# - Index build time: <1 minute
+# - Memory overhead: ~50MB (BM25 index)
+# - Query latency: <500ms p95
+
+# GraphRAG:
+# - Index build time: 5-10 minutes
+# - Memory overhead: ~100-200MB (graph + embeddings)
+# - Query latency: <300ms p95
+
+# RAPTOR:
+# - Tree build time: 10-20 minutes
+# - Memory overhead: ~200-300MB (tree + embeddings)
+# - Query latency: <400ms p95
+
+# ============================================================================
+# Testing
+# ============================================================================
+
+# Run tests after installation:
+# pytest tests/test_dspy_optimizer.py
+# pytest tests/test_hybrid_search.py
+# pytest tests/test_graphrag.py
+# pytest tests/test_raptor.py
+
+# Performance benchmarks:
+# pytest tests/performance/ -v --benchmark-only
+
+# ============================================================================
+# Documentation Links
+# ============================================================================
+
+# DSPy:
+# - Docs: https://dspy.ai/
+# - GitHub: https://github.com/stanfordnlp/dspy
+# - MIPROv2: https://dspy.ai/deep-dive/optimizers/miprov2/
+
+# Hybrid Search:
+# - BM25: https://github.com/dorianbrown/rank_bm25
+# - Cross-encoder: https://www.sbert.net/docs/pretrained_cross-encoders.html
+
+# GraphRAG:
+# - Microsoft Research: https://www.microsoft.com/en-us/research/project/graphrag/
+# - NetworkX: https://networkx.org/
+# - Louvain: https://python-louvain.readthedocs.io/
+
+# RAPTOR:
+# - Paper: https://arxiv.org/abs/2401.18059
+# - GitHub: https://github.com/parthsarthi03/raptor
+# - UMAP: https://umap-learn.readthedocs.io/
+
+# ============================================================================
+# License Compatibility
+# ============================================================================
+
+# All dependencies are compatible with AutoLabeler's license:
+# - dspy-ai: MIT License
+# - rank-bm25: Apache 2.0
+# - sentence-transformers: Apache 2.0
+# - networkx: BSD-3-Clause
+# - python-louvain: BSD-3-Clause
+# - umap-learn: BSD-3-Clause
+# - scikit-learn: BSD-3-Clause
+# - scipy: BSD-3-Clause
+
+# ============================================================================
+# Migration Notes
+# ============================================================================
+
+# Migrating from Phase 1 to Phase 2:
+
+# 1. Install Phase 2 dependencies:
+#    pip install -r phase2_dependencies.txt
+
+# 2. No breaking changes - all new features are opt-in
+
+# 3. Enable DSPy optimization:
+#    config = LabelingConfig(use_validation=True)
+#    result = service.optimize_prompts(train_df, val_df, config=DSPyConfig())
+
+# 4. Enable advanced RAG:
+#    config = LabelingConfig(rag_strategy="hybrid")  # or "graphrag", "raptor"
+#    service = LabelingService(..., config=config)
+
+# 5. Existing code continues to work with default settings
+
+# ============================================================================
+# Maintenance
+# ============================================================================
+
+# This file should be updated when:
+# - New Phase 2 features are added
+# - Dependency versions change
+# - Compatibility issues are discovered
+# - Performance characteristics change
+
+# Last Updated: 2025-10-07
+# Version: 1.0
+# Status: READY FOR IMPLEMENTATION
