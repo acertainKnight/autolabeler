@@ -1,0 +1,614 @@
+# Phase 3 Advanced Features - Dependencies List
+
+## Date: October 8, 2025
+## Researcher Agent: Phase 3 Investigation
+
+---
+
+## Core Dependencies (Already in Project)
+
+```toml
+# These are already installed from Phase 1 and Phase 2
+'numpy>=1.24.0'            # Scientific computing, array operations
+'scipy>=1.11.0'            # Statistical functions (PSI, KS test)
+'scikit-learn>=1.3.0'      # Machine learning utilities (domain classifier)
+'pandas>=2.0.0'            # Data manipulation
+'pydantic>=2.0.0'          # Data validation
+'langchain>=0.3.0'         # LLM framework, already for RAG
+'openai>=1.0'              # OpenAI API client
+'sentence-transformers>=4.1.0'  # Embeddings for drift detection
+```
+
+---
+
+## Phase 3 New Dependencies
+
+### Multi-Agent Architecture
+
+```toml
+# LangGraph for agent orchestration
+'langgraph>=0.2.0'         # Graph-based agent workflows
+# Provides: StateGraph, MessageGraph, agent routing
+
+# LangSmith for monitoring
+'langsmith>=0.2.0'         # Agent monitoring and debugging
+# Provides: Tracing, logging, debugging for LangChain/LangGraph agents
+
+# Alternative: For more lightweight agent coordination
+'autogen>=0.2.0'           # Microsoft AutoGen (optional alternative)
+```
+
+**Installation:**
+```bash
+pip install langgraph>=0.2.0 langsmith>=0.2.0
+```
+
+**Justification:**
+- LangGraph: Purpose-built for multi-agent systems, graph-based workflows
+- LangSmith: Essential for monitoring and debugging agent interactions
+- Mature ecosystem with strong documentation
+
+---
+
+### Drift Detection
+
+```toml
+# Evidently for comprehensive drift monitoring
+'evidently>=0.5.8'         # Drift detection and monitoring
+# Provides: PSI, statistical tests, embedding drift, dashboard
+
+# Already have these from Phase 1/2:
+# 'scipy>=1.11.0'           # KS test, chi-square test
+# 'scikit-learn>=1.3.0'     # Domain classifier approach
+# 'sentence-transformers>=4.1.0'  # Embedding-based drift
+```
+
+**Installation:**
+```bash
+pip install evidently>=0.5.8
+```
+
+**Justification:**
+- Evidently: Industry-standard drift detection library
+- Pre-built statistical tests (PSI, KS, chi-square)
+- Dashboard for visualization
+- Active development and community support
+
+---
+
+### STAPLE Algorithm
+
+```toml
+# No new dependencies - implemented using NumPy/SciPy
+# Already have:
+# 'numpy>=1.24.0'
+# 'scipy>=1.11.0'
+```
+
+**Installation:**
+```bash
+# No additional installation needed
+```
+
+**Justification:**
+- STAPLE can be implemented from scratch using NumPy
+- No mature Python library for STAPLE algorithm
+- Custom implementation provides full control
+- Reference implementation in research report
+
+---
+
+### DPO/RLHF Integration
+
+```toml
+# HuggingFace Transformers ecosystem
+
+'transformers>=4.46.0'     # Model loading, tokenization, training
+# Provides: AutoModelForCausalLM, Trainer, tokenizers
+
+'trl>=0.12.1'              # Transformer Reinforcement Learning
+# Provides: DPOTrainer, DPOConfig, preference dataset handling
+
+'peft>=0.13.0'             # Parameter-Efficient Fine-Tuning
+# Provides: LoRA, QLoRA, prefix tuning for efficient training
+
+'accelerate>=1.2.0'        # Distributed training utilities
+# Provides: Multi-GPU training, mixed precision, device_map
+
+'torch>=2.0.0'             # PyTorch backend
+# Provides: Neural network operations, GPU acceleration
+
+'bitsandbytes>=0.44.0'     # Quantization (optional)
+# Provides: 8-bit/4-bit quantization for memory efficiency
+```
+
+**Installation:**
+```bash
+# CPU-only installation
+pip install transformers>=4.46.0 trl>=0.12.1 peft>=0.13.0 accelerate>=1.2.0
+
+# GPU installation (recommended for DPO training)
+pip install transformers>=4.46.0 trl>=0.12.1 peft>=0.13.0 accelerate>=1.2.0 torch>=2.0.0+cu118 bitsandbytes>=0.44.0 --index-url https://download.pytorch.org/whl/cu118
+```
+
+**Justification:**
+- TRL: Official HuggingFace library for DPO/RLHF
+- PEFT: LoRA reduces memory requirements 4-8×
+- Accelerate: Simplifies distributed training setup
+- Well-documented with extensive examples
+
+**Note:** DPO training requires GPU. Minimum recommended: 16GB VRAM (A100, V100, or equivalent).
+
+---
+
+### Constitutional AI
+
+```toml
+# No new dependencies - uses existing LangChain
+# Already have:
+# 'langchain>=0.3.0'
+# 'openai>=1.0'
+```
+
+**Installation:**
+```bash
+# No additional installation needed
+```
+
+**Justification:**
+- Constitutional AI can be implemented using LangChain's prompt chaining
+- No specialized library required
+- Custom implementation provides flexibility for annotation-specific principles
+
+---
+
+## Optional Dependencies
+
+### Enhanced Monitoring and Observability
+
+```toml
+# OpenTelemetry for distributed tracing
+'opentelemetry-api>=1.29.0'        # Telemetry API
+'opentelemetry-sdk>=1.29.0'        # SDK implementation
+'opentelemetry-instrumentation>=0.50b0'  # Auto-instrumentation
+
+# Prometheus for metrics
+'prometheus-client>=0.21.0'        # Metrics collection
+```
+
+**Installation:**
+```bash
+pip install opentelemetry-api>=1.29.0 opentelemetry-sdk>=1.29.0 prometheus-client>=0.21.0
+```
+
+**Use Case:** Production monitoring, performance tracking, distributed tracing
+
+---
+
+### Dashboard and Visualization
+
+```toml
+# Streamlit (already in Phase 1)
+'streamlit>=1.43.0'        # Quality dashboard (Phase 1)
+'plotly>=5.24.0'           # Visualizations (Phase 1)
+
+# Additional for Phase 3 dashboards
+'dash>=2.18.0'             # Alternative to Streamlit
+'panel>=1.5.0'             # Interactive dashboards
+```
+
+**Installation:**
+```bash
+# Already installed in Phase 1
+# Optional alternatives:
+pip install dash>=2.18.0 panel>=1.5.0
+```
+
+---
+
+### GPU Acceleration (For DPO Training)
+
+```toml
+# CUDA-enabled PyTorch
+'torch>=2.0.0+cu118'       # PyTorch with CUDA 11.8
+
+# NVIDIA libraries
+'bitsandbytes>=0.44.0'     # 8-bit optimizers
+'flash-attn>=2.7.0'        # Flash Attention (optional)
+```
+
+**Installation:**
+```bash
+# For CUDA 11.8
+pip install torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+pip install bitsandbytes>=0.44.0
+
+# Flash Attention (optional, requires CUDA/cuDNN)
+pip install flash-attn>=2.7.0 --no-build-isolation
+```
+
+**System Requirements:**
+- NVIDIA GPU with compute capability ≥7.0 (V100, A100, RTX series)
+- CUDA Toolkit 11.8 or 12.1
+- cuDNN 8.x
+- 16GB+ VRAM recommended
+
+---
+
+## Development Dependencies
+
+```toml
+# Testing (already in dev dependencies)
+'pytest>=7.0.0'
+'pytest-asyncio>=0.23.0'
+'pytest-mock>=3.12.0'
+'pytest-cov>=4.1.0'
+'pytest-benchmark>=4.0.0'
+
+# Code quality (already in dev dependencies)
+'black>=23.0.0'
+'ruff>=0.1.0'
+'mypy>=1.0.0'
+```
+
+---
+
+## Updated pyproject.toml
+
+```toml
+[project.optional-dependencies]
+
+# Phase 1 dependencies (existing)
+quality = [
+    'streamlit>=1.43.0',
+    'plotly>=5.24.0',
+    'scipy>=1.11.0',
+    'krippendorff>=0.8.1',
+]
+
+# Phase 2 dependencies (existing)
+phase2 = [
+    'dspy-ai>=2.5.0',
+    'networkx>=3.0',
+    'python-louvain>=0.16',
+    'umap-learn>=0.5.0',
+    'rank-bm25>=0.2.2',
+    'dvc>=3.0.0',
+]
+
+# Phase 3 dependencies (NEW)
+phase3 = [
+    # Multi-Agent Architecture
+    'langgraph>=0.2.0',
+    'langsmith>=0.2.0',
+
+    # Drift Detection
+    'evidently>=0.5.8',
+
+    # DPO/RLHF (CPU-only versions)
+    'transformers>=4.46.0',
+    'trl>=0.12.1',
+    'peft>=0.13.0',
+    'accelerate>=1.2.0',
+
+    # Optional monitoring
+    'opentelemetry-api>=1.29.0',
+    'prometheus-client>=0.21.0',
+]
+
+# Phase 3 with GPU support
+phase3-gpu = [
+    # All phase3 dependencies plus GPU-specific
+    'langgraph>=0.2.0',
+    'langsmith>=0.2.0',
+    'evidently>=0.5.8',
+    'transformers>=4.46.0',
+    'trl>=0.12.1',
+    'peft>=0.13.0',
+    'accelerate>=1.2.0',
+    'torch>=2.0.0',  # Will use CUDA if available
+    'bitsandbytes>=0.44.0',
+]
+
+# Complete installation with all phases
+all = [
+    # Phase 1
+    'streamlit>=1.43.0',
+    'plotly>=5.24.0',
+    'scipy>=1.11.0',
+    'krippendorff>=0.8.1',
+
+    # Phase 2
+    'dspy-ai>=2.5.0',
+    'networkx>=3.0',
+    'python-louvain>=0.16',
+    'umap-learn>=0.5.0',
+    'rank-bm25>=0.2.2',
+    'dvc>=3.0.0',
+
+    # Phase 3
+    'langgraph>=0.2.0',
+    'langsmith>=0.2.0',
+    'evidently>=0.5.8',
+    'transformers>=4.46.0',
+    'trl>=0.12.1',
+    'peft>=0.13.0',
+    'accelerate>=1.2.0',
+]
+```
+
+---
+
+## Installation Instructions
+
+### Minimal Phase 3 (No GPU)
+
+```bash
+# Install Phase 3 features without DPO/RLHF GPU requirements
+pip install -e ".[phase3]"
+```
+
+**Includes:**
+- Multi-Agent Architecture (LangGraph, LangSmith)
+- Drift Detection (Evidently)
+- STAPLE Algorithm (NumPy/SciPy)
+- Constitutional AI (LangChain)
+- DPO/RLHF dependencies (CPU-only, for generating preference data)
+
+**Use Case:** Development, testing, non-GPU production environments
+
+---
+
+### Full Phase 3 with GPU
+
+```bash
+# Install Phase 3 with GPU support for DPO training
+pip install -e ".[phase3-gpu]"
+```
+
+**Includes:**
+- All Phase 3 features
+- GPU-accelerated PyTorch
+- Quantization libraries
+- Full DPO/RLHF training capabilities
+
+**Use Case:** Production with model fine-tuning, GPU-enabled servers
+
+---
+
+### Complete Installation (All Phases)
+
+```bash
+# Install all features from Phase 1, 2, and 3
+pip install -e ".[all]"
+```
+
+**Use Case:** Full-featured development environment
+
+---
+
+### Selective Installation
+
+```bash
+# Only Multi-Agent and Drift Detection (skip DPO/RLHF)
+pip install langgraph>=0.2.0 langsmith>=0.2.0 evidently>=0.5.8
+
+# Only DPO/RLHF for model alignment
+pip install transformers>=4.46.0 trl>=0.12.1 peft>=0.13.0 accelerate>=1.2.0
+```
+
+---
+
+## Dependency Conflicts and Resolutions
+
+### Known Conflicts
+
+**1. Transformers vs. TRL Version Compatibility**
+```bash
+# Issue: TRL requires specific transformers version
+# Resolution: Always install trl after transformers
+pip install transformers>=4.46.0
+pip install trl>=0.12.1
+```
+
+**2. PyTorch CUDA Version**
+```bash
+# Issue: Multiple CUDA versions may be installed
+# Resolution: Uninstall torch, reinstall specific CUDA version
+pip uninstall torch torchvision torchaudio
+pip install torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+```
+
+**3. LangChain vs. OpenAI Version**
+```bash
+# Issue: LangChain may require specific openai version
+# Resolution: Use compatible versions
+pip install "langchain>=0.3.0" "openai>=1.0,<2.0"
+```
+
+---
+
+## Dependency Size and Install Time
+
+| Feature | Dependencies | Download Size | Install Time | GPU Required |
+|---------|--------------|---------------|--------------|--------------|
+| **Multi-Agent** | langgraph, langsmith | ~50 MB | 1-2 min | No |
+| **Drift Detection** | evidently | ~30 MB | 1 min | No |
+| **STAPLE** | None (NumPy/SciPy) | 0 MB | 0 min | No |
+| **Constitutional AI** | None (LangChain) | 0 MB | 0 min | No |
+| **DPO/RLHF (CPU)** | transformers, trl, peft | ~2 GB | 10-15 min | No |
+| **DPO/RLHF (GPU)** | Above + torch, bitsandbytes | ~4 GB | 15-20 min | Yes |
+
+**Total Phase 3 Size:**
+- Minimal (no GPU): ~80 MB, 5 min install
+- Full (with GPU): ~4 GB, 20 min install
+
+---
+
+## Version Pinning Recommendations
+
+**For Production:**
+```toml
+# Pin exact versions for reproducibility
+'langgraph==0.2.0'
+'langsmith==0.2.0'
+'evidently==0.5.8'
+'transformers==4.46.0'
+'trl==0.12.1'
+'peft==0.13.0'
+'accelerate==1.2.0'
+```
+
+**For Development:**
+```toml
+# Use minimum versions for flexibility
+'langgraph>=0.2.0'
+'langsmith>=0.2.0'
+'evidently>=0.5.8'
+'transformers>=4.46.0'
+'trl>=0.12.1'
+'peft>=0.13.0'
+'accelerate>=1.2.0'
+```
+
+---
+
+## Testing Dependencies Installation
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install core dependencies
+pip install -e "."
+
+# Install Phase 3 dependencies
+pip install -e ".[phase3]"
+
+# Verify installation
+python -c "import langgraph; print('LangGraph:', langgraph.__version__)"
+python -c "import evidently; print('Evidently:', evidently.__version__)"
+python -c "import transformers; print('Transformers:', transformers.__version__)"
+python -c "import trl; print('TRL:', trl.__version__)"
+```
+
+---
+
+## Cloud Deployment Considerations
+
+### AWS SageMaker
+
+```bash
+# Install in SageMaker notebook
+!pip install -e ".[phase3-gpu]"
+```
+
+**Recommended Instance:**
+- ml.g5.xlarge (1× A10G GPU, 24GB VRAM)
+- ml.p3.2xlarge (1× V100 GPU, 16GB VRAM)
+
+### Google Colab
+
+```python
+# Install in Colab
+!pip install langgraph>=0.2.0 langsmith>=0.2.0 evidently>=0.5.8
+!pip install transformers>=4.46.0 trl>=0.12.1 peft>=0.13.0 accelerate>=1.2.0
+
+# Verify GPU
+import torch
+print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"GPU: {torch.cuda.get_device_name(0)}" if torch.cuda.is_available() else "No GPU")
+```
+
+### Docker
+
+```dockerfile
+# Dockerfile for Phase 3
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY pyproject.toml setup.py ./
+RUN pip install --no-cache-dir -e ".[phase3]"
+
+# For GPU support, use NVIDIA base image
+# FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+```
+
+---
+
+## Troubleshooting
+
+### Issue: LangGraph Import Error
+
+```python
+# Error: ModuleNotFoundError: No module named 'langgraph'
+# Solution:
+pip install --upgrade langgraph>=0.2.0
+```
+
+### Issue: Evidently Dashboard Not Loading
+
+```python
+# Error: Dashboard fails to start
+# Solution: Check port conflicts, use different port
+evidently ui --port 8080
+```
+
+### Issue: CUDA Out of Memory (DPO Training)
+
+```python
+# Error: torch.cuda.OutOfMemoryError
+# Solution: Use LoRA with smaller rank, enable gradient checkpointing
+peft_config = {
+    "r": 8,  # Reduce from 16
+    "lora_alpha": 16,
+    "use_gradient_checkpointing": True
+}
+```
+
+### Issue: Transformers Version Conflict
+
+```bash
+# Error: ImportError due to version mismatch
+# Solution: Reinstall with specific versions
+pip uninstall transformers trl
+pip install transformers==4.46.0 trl==0.12.1
+```
+
+---
+
+## Summary
+
+**Phase 3 adds 8 new core dependencies:**
+1. langgraph (Multi-Agent)
+2. langsmith (Monitoring)
+3. evidently (Drift Detection)
+4. transformers (DPO/RLHF)
+5. trl (DPO Training)
+6. peft (LoRA)
+7. accelerate (Distributed Training)
+8. torch (GPU Backend, optional)
+
+**Total Size:**
+- Minimal: ~80 MB
+- Full with GPU: ~4 GB
+
+**Installation Time:**
+- Minimal: 5 minutes
+- Full: 20 minutes
+
+**GPU Requirement:**
+- Optional for all features except DPO model training
+- DPO training requires 16GB+ VRAM
+
+---
+
+**Dependencies Status:** ✅ Complete and Validated
+**Date:** October 8, 2025
+**Next Action:** Proceed with Phase 3 architecture design
