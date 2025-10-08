@@ -105,6 +105,14 @@ pip install -e .
 
 # Or install with uv (faster)
 uv pip install -e .
+
+### Phase 3 Advanced Features (Optional)
+
+# Install Phase 3 dependencies (multi-agent, drift detection)
+pip install -e .[phase3]
+
+# Optional: Install DPO/RLHF dependencies
+pip install -e .[dpo]
 ```
 
 ### Environment Setup
@@ -199,6 +207,22 @@ labeling_config = LabelingConfig(
     temperature=0.1
 )
 
+# Multi-agent configuration (Phase 3)
+multi_agent_config = MultiAgentConfig(
+    use_multi_agent=True,
+    routing_strategy="capability",
+    enable_monitoring=True,
+    max_retries=3
+)
+
+# Drift detection configuration (Phase 3)
+drift_config = DriftDetectionConfig(
+    enable_drift_detection=True,
+    drift_threshold=0.1,
+    detection_methods=["psi", "ks", "chi_square"],
+    monitoring_interval=100
+)
+
 # Batch processing configuration
 batch_config = BatchConfig(
     batch_size=100,
@@ -287,6 +311,26 @@ results = labeler.label_ensemble(
     text_column="review_text",
     models=["gpt-3.5-turbo", "claude-2", "llama-2-70b"],
     method="confidence_weighted"
+)
+
+# Multi-agent workflow (Phase 3)
+from autolabeler.agents import MultiAgentService
+
+multi_agent = MultiAgentService(settings)
+results = multi_agent.label_with_agents(
+    test_df,
+    text_column="review_text",
+    task_type="classification"
+)
+
+# Drift detection (Phase 3)
+from autolabeler.drift import DriftDetectionService
+
+drift_detector = DriftDetectionService(drift_config)
+drift_report = drift_detector.detect_drift(
+    reference_data=train_df,
+    current_data=test_df,
+    feature_columns=["review_text"]
 )
 
 # 7. Evaluate performance
