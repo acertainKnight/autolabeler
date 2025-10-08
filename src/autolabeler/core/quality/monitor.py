@@ -78,7 +78,7 @@ class QualityMonitor:
             ... )
             >>> print(f"Krippendorff's alpha: {result['alpha']:.3f}")
         """
-        if not annotator_columns:
+        if not annotator_columns or len(annotator_columns) < 2:
             raise ValueError("Must provide at least 2 annotator columns")
 
         # Create reliability data matrix (annotators x items)

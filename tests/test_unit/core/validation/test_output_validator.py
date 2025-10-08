@@ -233,7 +233,7 @@ class TestValidationFailures:
         self, validator, mock_client, sample_prompt
     ):
         """Test with multiple validation rules where one fails."""
-        response = SimpleResponse(label="positive", confidence=1.5)  # Invalid confidence
+        response = SimpleResponse(label="positive", confidence=0.3)  # Low confidence
 
         mock_structured_llm = Mock()
         mock_structured_llm.invoke.return_value = response
@@ -243,9 +243,10 @@ class TestValidationFailures:
             return True, ""
 
         def validate_confidence(resp: SimpleResponse) -> tuple[bool, str]:
-            if 0.0 <= resp.confidence <= 1.0:
+            # Require high confidence (>0.8)
+            if resp.confidence >= 0.8:
                 return True, ""
-            return False, f"Confidence {resp.confidence} out of range [0.0, 1.0]"
+            return False, f"Confidence {resp.confidence} too low (must be >= 0.8)"
 
         with pytest.raises(ValidationError):
             validator.validate_and_retry(
@@ -451,13 +452,14 @@ class TestValidationRuleBuilders:
 
     def test_create_confidence_validator_out_of_range(self):
         """Test confidence validator with out-of-range confidence."""
-        validator = create_confidence_validator(0.0, 1.0)
+        # Use 0.5 to 0.8 range to test a value outside this narrower range
+        validator = create_confidence_validator(0.5, 0.8)
 
-        response = SimpleResponse(label="positive", confidence=1.5)
+        response = SimpleResponse(label="positive", confidence=0.3)  # Below min
         is_valid, error = validator(response)
 
         assert is_valid is False
-        assert "1.5" in error
+        assert "0.3" in error
         assert "range" in error.lower()
 
     def test_create_confidence_validator_no_field(self):

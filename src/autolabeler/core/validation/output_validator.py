@@ -172,11 +172,16 @@ class StructuredOutputValidator:
                 else:
                     # Final attempt failed
                     self.failed_validations += 1
-                    raise ValidationError(
+                    error = ValidationError(
                         f"Validation failed after {self.max_retries + 1} attempts",
                         validation_errors=validation_errors,
                         attempts=self.max_retries + 1,
                     )
+                    raise error
+
+            except ValidationError:
+                # Re-raise our own ValidationError without catching it
+                raise
 
             except PydanticValidationError as e:
                 # Type validation failed

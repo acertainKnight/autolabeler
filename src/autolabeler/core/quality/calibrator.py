@@ -176,13 +176,31 @@ class ConfidenceCalibrator:
         # Calculate ECE
         ece, bins_data = self._compute_ece(confidence_scores, correctness)
 
-        # Calculate Brier score
-        brier = brier_score_loss(correctness, confidence_scores)
+        # Calculate Brier score (handle degenerate case with only one class)
+        try:
+            brier = brier_score_loss(correctness, confidence_scores)
+        except ValueError as e:
+            if "only one label" in str(e):
+                # Degenerate case: all predictions are same class
+                # Brier score = mean squared error when all labels are 0 or 1
+                brier = float(np.mean((correctness - confidence_scores) ** 2))
+            else:
+                raise
 
         # Calculate log loss (with small epsilon to avoid log(0))
         epsilon = 1e-10
         conf_clipped = np.clip(confidence_scores, epsilon, 1 - epsilon)
-        logloss = log_loss(correctness, conf_clipped)
+        try:
+            logloss = log_loss(correctness, conf_clipped)
+        except ValueError as e:
+            if "only one label" in str(e):
+                # Degenerate case: compute log loss manually
+                if correctness[0] == 1:
+                    logloss = float(-np.mean(np.log(conf_clipped)))
+                else:
+                    logloss = float(-np.mean(np.log(1 - conf_clipped)))
+            else:
+                raise
 
         # Maximum Calibration Error (MCE)
         mce = max(bin_data["calibration_error"] for bin_data in bins_data) if bins_data else 0.0
