@@ -2,7 +2,8 @@
 Knowledge store for managing labeled examples and embeddings.
 
 This module provides the core knowledge management functionality for the AutoLabeler,
-including vector storage, example retrieval, and metadata tracking.
+including vector storage, example retrieval, and metadata tracking. It supports
+both traditional RAG and advanced methods like GraphRAG and RAPTOR.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import json
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 from langchain.schema import Document
@@ -21,6 +22,7 @@ from loguru import logger
 
 from ...config import Settings
 from ..base import ConfigurableComponent
+from ..rag import GraphRAG, GraphRAGConfig, RAPTORRAG, RAPTORConfig
 
 
 class KnowledgeStore(ConfigurableComponent):
@@ -46,6 +48,7 @@ class KnowledgeStore(ConfigurableComponent):
         dataset_name: str,
         settings: Settings,
         store_dir: Path | None = None,
+        rag_mode: Literal['traditional', 'graph', 'raptor'] = 'traditional',
     ) -> None:
         """Initialize knowledge store with dataset-specific configuration."""
         super().__init__(
@@ -57,22 +60,28 @@ class KnowledgeStore(ConfigurableComponent):
         self.dataset_name = dataset_name
         self.store_dir = store_dir or Path("knowledge_bases") / dataset_name
         self.store_dir.mkdir(parents=True, exist_ok=True)
+        self.rag_mode = rag_mode
 
         # Storage paths
         self.vector_store_path = self.store_dir / "vector_store"
         self.metadata_path = self.store_dir / "metadata.json"
         self.examples_path = self.store_dir / "examples.parquet"
+        self.graph_rag_path = self.store_dir / "graph_rag.pkl"
+        self.raptor_rag_path = self.store_dir / "raptor_rag.pkl"
 
         # Initialize embeddings
         self.embeddings = HuggingFaceEmbeddings(model_name=settings.embedding_model)
 
         # Storage components
         self.vector_store: FAISS | None = None
+        self.graph_rag: GraphRAG | None = None
+        self.raptor_rag: RAPTORRAG | None = None
         self.metadata: dict[str, Any] = {
             "total_examples": 0,
             "sources": {},
             "label_distribution": {},
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "rag_mode": rag_mode
         }
 
         # Load existing data
@@ -747,3 +756,264 @@ class KnowledgeStore(ConfigurableComponent):
                 "remaining_examples": 0,
                 "error": str(e)
             }
+
+    def build_graph_rag(
+        self,
+        graph_config: GraphRAGConfig | None = None,
+    ) -> None:
+        """Build GraphRAG index from existing examples.
+
+        Args:
+            graph_config: Configuration for GraphRAG (uses defaults if None)
+
+        Example:
+            >>> config = GraphRAGConfig(similarity_threshold=0.7)
+            >>> store.build_graph_rag(config)
+        """
+        if not self.examples_path.exists():
+            logger.warning("No examples found to build GraphRAG")
+            return
+
+        # Load examples
+        df = pd.read_parquet(self.examples_path)
+
+        # Find text and label columns
+        text_cols = [col for col in df.columns if 'text' in col.lower() and col != 'text_hash']
+        label_cols = [col for col in df.columns if 'label' in col.lower()]
+
+        if not text_cols or not label_cols:
+            logger.error("Could not find text and label columns for GraphRAG")
+            return
+
+        text_col = text_cols[0]
+        label_col = label_cols[0]
+
+        # Initialize GraphRAG
+        config = graph_config or GraphRAGConfig()
+        self.graph_rag = GraphRAG(config)
+
+        # Build graph
+        logger.info("Building GraphRAG index...")
+        self.graph_rag.build_graph(
+            df=df,
+            text_column=text_col,
+            label_column=label_col,
+            embedding_fn=lambda x: self.embeddings.embed_query(x),
+        )
+
+        # Save graph
+        self.graph_rag.save_graph(self.graph_rag_path)
+        logger.info(f"GraphRAG index built and saved to {self.graph_rag_path}")
+
+    def build_raptor_rag(
+        self,
+        raptor_config: RAPTORConfig | None = None,
+        summarize_fn: callable | None = None,
+    ) -> None:
+        """Build RAPTOR tree from existing examples.
+
+        Args:
+            raptor_config: Configuration for RAPTOR (uses defaults if None)
+            summarize_fn: Function to generate summaries (required)
+
+        Example:
+            >>> def summarize(texts):
+            ...     # Use LLM to create summary
+            ...     return llm.invoke(f"Summarize: {texts}")
+            >>> store.build_raptor_rag(summarize_fn=summarize)
+        """
+        if summarize_fn is None:
+            logger.error("summarize_fn is required for RAPTOR")
+            return
+
+        if not self.examples_path.exists():
+            logger.warning("No examples found to build RAPTOR")
+            return
+
+        # Load examples
+        df = pd.read_parquet(self.examples_path)
+
+        # Find text and label columns
+        text_cols = [col for col in df.columns if 'text' in col.lower() and col != 'text_hash']
+        label_cols = [col for col in df.columns if 'label' in col.lower()]
+
+        if not text_cols or not label_cols:
+            logger.error("Could not find text and label columns for RAPTOR")
+            return
+
+        text_col = text_cols[0]
+        label_col = label_cols[0]
+
+        # Initialize RAPTOR
+        config = raptor_config or RAPTORConfig()
+        self.raptor_rag = RAPTORRAG(config)
+
+        # Build tree
+        logger.info("Building RAPTOR tree...")
+        self.raptor_rag.build_tree(
+            df=df,
+            text_column=text_col,
+            label_column=label_col,
+            embedding_fn=lambda x: self.embeddings.embed_query(x),
+            summarize_fn=summarize_fn,
+        )
+
+        # Save tree
+        self.raptor_rag.save_tree(self.raptor_rag_path)
+        logger.info(f"RAPTOR tree built and saved to {self.raptor_rag_path}")
+
+    def find_similar_examples_advanced(
+        self,
+        text: str,
+        k: int = 5,
+        source_filter: str | None = None,
+        confidence_threshold: float | None = None,
+        rag_mode: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Find similar examples using advanced RAG methods.
+
+        This method automatically uses the configured RAG mode (traditional, graph, or raptor)
+        or can override with a specific mode.
+
+        Args:
+            text: Query text
+            k: Number of examples to retrieve
+            source_filter: Filter by source type
+            confidence_threshold: Minimum confidence threshold
+            rag_mode: Override default RAG mode ('traditional', 'graph', 'raptor')
+
+        Returns:
+            list[dict]: Similar examples with metadata
+
+        Example:
+            >>> # Use configured mode
+            >>> examples = store.find_similar_examples_advanced("query text", k=5)
+            >>>
+            >>> # Override to use GraphRAG
+            >>> examples = store.find_similar_examples_advanced("query text", k=5, rag_mode='graph')
+        """
+        mode = rag_mode or self.rag_mode
+
+        # Compute query embedding
+        query_embedding = self.embeddings.embed_query(text)
+
+        if mode == 'graph' and self.graph_rag is not None:
+            # Use GraphRAG
+            results = self.graph_rag.retrieve(
+                query_text=text,
+                query_embedding=query_embedding,
+                k=k,
+            )
+            # Convert to standard format
+            return self._convert_graph_rag_results(results)
+
+        elif mode == 'raptor' and self.raptor_rag is not None:
+            # Use RAPTOR
+            results = self.raptor_rag.retrieve(
+                query_text=text,
+                query_embedding=query_embedding,
+                k=k,
+            )
+            # Convert to standard format
+            return self._convert_raptor_rag_results(results)
+
+        else:
+            # Fall back to traditional RAG
+            return self.find_similar_examples(
+                text=text,
+                k=k,
+                source_filter=source_filter,
+                confidence_threshold=confidence_threshold,
+            )
+
+    def _convert_graph_rag_results(
+        self, results: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Convert GraphRAG results to standard format.
+
+        Args:
+            results: Results from GraphRAG
+
+        Returns:
+            Standardized results
+        """
+        converted = []
+        for result in results:
+            converted.append({
+                'text': result['text'],
+                'label': result['label'],
+                'similarity_score': result['similarity_score'],
+                'source': 'graph_rag',
+                'confidence': 1.0,  # GraphRAG doesn't provide confidence
+                'metadata': {
+                    **result.get('metadata', {}),
+                    'graph_score': result.get('graph_score'),
+                    'pagerank_score': result.get('pagerank_score'),
+                    'community_id': result.get('community_id'),
+                }
+            })
+        return converted
+
+    def _convert_raptor_rag_results(
+        self, results: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Convert RAPTOR results to standard format.
+
+        Args:
+            results: Results from RAPTOR
+
+        Returns:
+            Standardized results
+        """
+        converted = []
+        for result in results:
+            converted.append({
+                'text': result['text'],
+                'label': result.get('metadata', {}).get('label', result.get('label', '')),
+                'similarity_score': result['similarity_score'],
+                'source': 'raptor',
+                'confidence': 1.0,  # RAPTOR doesn't provide confidence
+                'metadata': {
+                    **result.get('metadata', {}),
+                    'level': result.get('level'),
+                    'weighted_score': result.get('weighted_score'),
+                    'is_leaf': result.get('is_leaf'),
+                }
+            })
+        return converted
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get comprehensive statistics including advanced RAG info.
+
+        Returns:
+            dict: Statistics about the knowledge store
+
+        Example:
+            >>> stats = store.get_stats()
+            >>> print(f"RAG mode: {stats['rag_mode']}")
+        """
+        stats = self.get_statistics()
+
+        # Add advanced RAG stats
+        stats['rag_mode'] = self.rag_mode
+
+        if self.graph_rag is not None:
+            stats['graph_rag'] = {
+                'enabled': True,
+                'num_nodes': len(self.graph_rag.nodes),
+                'num_edges': self.graph_rag.graph.number_of_edges(),
+                'num_communities': len(self.graph_rag.communities),
+            }
+        else:
+            stats['graph_rag'] = {'enabled': False}
+
+        if self.raptor_rag is not None:
+            raptor_stats = self.raptor_rag.get_tree_statistics()
+            stats['raptor'] = {
+                'enabled': True,
+                **raptor_stats,
+            }
+        else:
+            stats['raptor'] = {'enabled': False}
+
+        return stats
