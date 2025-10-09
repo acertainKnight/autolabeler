@@ -12,6 +12,13 @@ from pydantic import BaseModel, Field
 
 from .config import Settings
 
+try:
+    import httpx
+    HTTPX_AVAILABLE = True
+except ImportError:
+    HTTPX_AVAILABLE = False
+    logger.warning("httpx not installed. Async processing will not be available. Install with: pip install httpx")
+
 
 class TaskConfig(BaseModel):
     """Configuration for a single classification task."""
@@ -227,6 +234,54 @@ class MultiAgentService:
                 reasoning={task: f"Parse error: {str(e)}" for task in tasks},
             )
 
+    async def _call_llm_async(self, prompt: str, tasks: list[str]) -> str:
+        """Make async LLM call for all tasks with structured output support.
+
+        Args:
+            prompt: Structured prompt with all tasks
+            tasks: List of task names for schema generation
+
+        Returns:
+            LLM response text (JSON string)
+        """
+        if not HTTPX_AVAILABLE:
+            raise RuntimeError("httpx is required for async processing. Install with: pip install httpx")
+
+        try:
+            if self.is_openrouter:
+                # OpenRouter async call
+                json_schema = self._build_json_schema(tasks)
+
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    # Rate limiting
+                    if hasattr(self.client, 'rate_limiter'):
+                        self.client.rate_limiter.acquire()
+
+                    response = await client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.settings.openrouter_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": self.settings.llm_model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": self.settings.temperature,
+                            "max_tokens": 2048,
+                            "response_format": json_schema,
+                        },
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    return data["choices"][0]["message"]["content"]
+            else:
+                # Fallback to sync for non-OpenRouter
+                return self._call_llm(prompt, tasks)
+
+        except Exception as e:
+            logger.error(f"Async LLM call failed: {e}")
+            return "{}"
+
     def _call_llm(self, prompt: str, tasks: list[str]) -> str:
         """Make single LLM call for all tasks with structured output support.
 
@@ -287,8 +342,22 @@ class MultiAgentService:
         response = self._call_llm(prompt, tasks)
         return self._parse_response(response, tasks)
 
+    async def _label_single_async(self, text: str, tasks: list[str]) -> MultiLabelResult:
+        """Async version of label_single for concurrent processing.
+
+        Args:
+            text: Text to classify
+            tasks: List of task names to perform
+
+        Returns:
+            MultiLabelResult with all classifications
+        """
+        prompt = self._build_prompt(text, tasks)
+        response = await self._call_llm_async(prompt, tasks)
+        return self._parse_response(response, tasks)
+
     def label_with_agents(
-        self, df: pd.DataFrame, text_column: str, tasks: list[str]
+        self, df: pd.DataFrame, text_column: str, tasks: list[str], use_async: bool = True
     ) -> pd.DataFrame:
         """Label entire DataFrame with multiple classification tasks.
 
@@ -296,10 +365,67 @@ class MultiAgentService:
             df: DataFrame with text to classify
             text_column: Name of column containing text
             tasks: List of task names to perform
+            use_async: Use async concurrent processing (default: True)
 
         Returns:
             DataFrame with added columns for each task's label and confidence
         """
+        if use_async and HTTPX_AVAILABLE and self.is_openrouter:
+            return asyncio.run(self._label_with_agents_async(df, text_column, tasks))
+        else:
+            if use_async and not HTTPX_AVAILABLE:
+                logger.warning("httpx not available, falling back to sequential processing")
+            return self._label_with_agents_sync(df, text_column, tasks)
+
+    async def _label_with_agents_async(
+        self, df: pd.DataFrame, text_column: str, tasks: list[str]
+    ) -> pd.DataFrame:
+        """Async concurrent labeling of entire DataFrame.
+
+        Processes all rows concurrently for maximum throughput.
+        """
+        logger.info(
+            f"Starting async multi-label classification with tasks: {', '.join(tasks)}"
+        )
+        results_df = df.copy()
+
+        # Initialize result columns
+        for task_name in tasks:
+            results_df[f"label_{task_name}"] = None
+            results_df[f"confidence_{task_name}"] = 0.0
+            results_df[f"reasoning_{task_name}"] = None
+
+        # Create async tasks for all rows
+        async_tasks = []
+        indices = []
+        for idx, row in df.iterrows():
+            text = row[text_column]
+            async_tasks.append(self._label_single_async(text, tasks))
+            indices.append(idx)
+
+        # Process all concurrently
+        logger.info(f"Processing {len(async_tasks)} rows concurrently...")
+        results = await asyncio.gather(*async_tasks, return_exceptions=True)
+
+        # Store results
+        for idx, result in zip(indices, results):
+            if isinstance(result, Exception):
+                logger.error(f"Failed to process row {idx}: {result}")
+                continue
+
+            for task_name in tasks:
+                results_df.at[idx, f"label_{task_name}"] = result.labels[task_name]
+                results_df.at[idx, f"confidence_{task_name}"] = result.confidences[task_name]
+                if result.reasoning:
+                    results_df.at[idx, f"reasoning_{task_name}"] = result.reasoning[task_name]
+
+        logger.info(f"Async multi-label classification complete: {len(df)} rows processed")
+        return results_df
+
+    def _label_with_agents_sync(
+        self, df: pd.DataFrame, text_column: str, tasks: list[str]
+    ) -> pd.DataFrame:
+        """Synchronous sequential labeling (fallback when async not available)."""
         logger.info(
             f"Starting multi-label classification with tasks: {', '.join(tasks)}"
         )
