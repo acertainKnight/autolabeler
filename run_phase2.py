@@ -12,7 +12,7 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
 
     phase1_rules = output_dir / "phase1_learned_rules.json"
-    phase2_output = output_dir / "phase2_labeled_19000.csv"
+    phase2_output = output_dir / "phase2_labeled_15000.csv"
     task_configs_file = project_root / "configs/fed_headlines_tasks.json"
 
     # Check if Phase 1 rules exist
@@ -32,18 +32,21 @@ if __name__ == "__main__":
     settings = Settings()
 
     # Run Phase 2
+    # Note: max_rows must match the total dataset size used in Phase 1
+    # skip_first_n should match n_samples from Phase 1
     phase2_full_labeling(
         input_file=input_file,
         output_file=phase2_output,
         task_configs_file=task_configs_file,
         learned_rules=learned_rules,
-        skip_first_n=1000,
-        max_rows=20000,
+        skip_first_n=5000,  # Must match n_samples from Phase 1
+        max_rows=20000,     # Total dataset size
         batch_size=100,
         settings=settings
     )
 
     print(f"\nPhase 2 complete!")
     print(f"Labeled data: {phase2_output}")
-    print(f"\nTo combine results, run:")
-    print(f"  python -c 'import pandas as pd; pd.concat([pd.read_csv(\"outputs/fed_headlines/phase1_labeled_1000.csv\"), pd.read_csv(\"{phase2_output}\")]).to_csv(\"outputs/fed_headlines/fed_headlines_labeled_20000.csv\", index=False)'")
+    print(f"Rows labeled: 5000-20000 (15,000 rows)")
+    print(f"\nTo combine results:")
+    print(f"  python -c 'import pandas as pd; pd.concat([pd.read_csv(\"outputs/fed_headlines/phase1_labeled_5000.csv\"), pd.read_csv(\"{phase2_output}\")]).to_csv(\"outputs/fed_headlines/fed_headlines_labeled_20000.csv\", index=False)'")
