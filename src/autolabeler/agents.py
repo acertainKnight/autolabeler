@@ -201,7 +201,9 @@ class MultiAgentService:
             for task_name in tasks:
                 if task_name in parsed:
                     task_result = parsed[task_name]
-                    labels[task_name] = task_result.get("label", "unknown")
+                    # Convert label to string (LLM may return int for numeric labels)
+                    label = task_result.get("label", "unknown")
+                    labels[task_name] = str(label) if label is not None else "unknown"
                     confidences[task_name] = float(
                         task_result.get("confidence", 0.0)
                     )
