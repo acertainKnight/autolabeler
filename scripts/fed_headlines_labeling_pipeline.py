@@ -114,7 +114,11 @@ def phase1_learn_rules(
     # Initialize settings
     if settings is None:
         settings = Settings()
+
+    # Set $100 budget for Phase 1
+    settings.llm_budget = 100.0
     logger.info(f"Using LLM: {settings.llm_model} (provider: {settings.llm_provider})")
+    logger.info(f"Budget limit: ${settings.llm_budget:.2f}")
 
     # Initialize services
     multi_agent = MultiAgentService(settings, task_configs)
@@ -249,6 +253,10 @@ def phase2_full_labeling(
     # Initialize settings
     if settings is None:
         settings = Settings()
+
+    # Set $100 budget for Phase 2
+    settings.llm_budget = 100.0
+    logger.info(f"Budget limit: ${settings.llm_budget:.2f}")
 
     # Initialize services (no rule evolution in Phase 2)
     multi_agent = MultiAgentService(settings, task_configs)
