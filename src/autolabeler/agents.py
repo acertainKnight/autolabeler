@@ -312,7 +312,7 @@ class MultiAgentService:
             results_df[f"reasoning_{task_name}"] = None
 
         # Process each row
-        for idx, row in df.iterrows():
+        for row_num, (idx, row) in enumerate(df.iterrows(), start=1):
             text = row[text_column]
             result = self.label_single(text, tasks)
 
@@ -327,8 +327,8 @@ class MultiAgentService:
                         task_name
                     ]
 
-            if (idx + 1) % 10 == 0:
-                logger.info(f"Processed {idx + 1}/{len(df)} rows")
+            if row_num % 10 == 0:
+                logger.info(f"Processed {row_num}/{len(df)} rows")
 
         logger.info("Multi-label classification complete")
         return results_df

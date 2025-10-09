@@ -35,7 +35,7 @@ def load_task_configs(config_path: Path) -> dict:
 
 
 def sample_data_across_time(df: pd.DataFrame, n_samples: int, date_column: str = "capturetime") -> pd.DataFrame:
-    """Sample data uniformly across time to get representative sample.
+    """Sample data randomly within each month to get representative sample.
 
     Args:
         df: Full DataFrame
@@ -43,20 +43,41 @@ def sample_data_across_time(df: pd.DataFrame, n_samples: int, date_column: str =
         date_column: Column containing timestamps
 
     Returns:
-        DataFrame with n_samples rows sampled across time
+        DataFrame with n_samples rows sampled randomly within each month
     """
     # Convert to datetime if needed
     df = df.copy()
-    df[date_column] = pd.to_datetime(df[date_column])
+    df[date_column] = pd.to_datetime(df[date_column], format='mixed', errors='coerce')
 
-    # Sort by time
-    df = df.sort_values(date_column)
-
-    # Take evenly spaced samples
-    indices = [int(i * len(df) / n_samples) for i in range(n_samples)]
-    sampled_df = df.iloc[indices].copy()
-
-    logger.info(f"Sampled {len(sampled_df)} rows from {df[date_column].min()} to {df[date_column].max()}")
+    # Create year-month column for grouping
+    df['year_month'] = df[date_column].dt.to_period('M')
+    
+    # Get unique months and calculate samples per month
+    unique_months = df['year_month'].unique()
+    samples_per_month = n_samples // len(unique_months)
+    remaining_samples = n_samples % len(unique_months)
+    
+    sampled_dfs = []
+    
+    for i, month in enumerate(unique_months):
+        month_data = df[df['year_month'] == month]
+        
+        # Add one extra sample to first few months if there are remaining samples
+        month_samples = samples_per_month + (1 if i < remaining_samples else 0)
+        month_samples = min(month_samples, len(month_data))  # Don't exceed available data
+        
+        if month_samples > 0:
+            sampled_month = month_data.sample(n=month_samples, random_state=42)
+            sampled_dfs.append(sampled_month)
+    
+    # Combine all monthly samples
+    sampled_df = pd.concat(sampled_dfs, ignore_index=True).drop('year_month', axis=1)
+    
+    # Sort by time for consistent ordering
+    sampled_df = sampled_df.sort_values(date_column)
+    
+    logger.info(f"Sampled {len(sampled_df)} rows randomly from {len(unique_months)} months")
+    logger.info(f"Date range: {sampled_df[date_column].min()} to {sampled_df[date_column].max()}")
     return sampled_df
 
 

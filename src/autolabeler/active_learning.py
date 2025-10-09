@@ -79,7 +79,7 @@ class RuleEvolutionService:
                         task_name=task_name,
                         pattern_type="low_confidence",
                         frequency=count,
-                        examples=examples.index.tolist(),
+                        examples=[str(idx) for idx in examples.index.tolist()],
                         suggested_rule=f"Clarify criteria for '{label}' classification",
                     )
                     patterns.append(pattern)
@@ -94,7 +94,7 @@ class RuleEvolutionService:
                     task_name=task_name,
                     pattern_type="edge_case",
                     frequency=len(borderline),
-                    examples=borderline.iloc[:5].index.tolist(),
+                    examples=[str(idx) for idx in borderline.iloc[:5].index.tolist()],
                     suggested_rule=f"Add rules for edge cases in {task_name}",
                 )
                 patterns.append(pattern)

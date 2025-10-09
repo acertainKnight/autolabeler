@@ -31,7 +31,8 @@
       "Preserve capitalization as they appear in headlines",
       "Do not include titles or positions, only the name",
       "If multiple names appear, extract the SPEAKER not others mentioned",
-      "Include only the last name for the speaker"
+      "Include only the last name for the speaker",
+      "Miran is now a Fed speaker, so include Miran as well"
     ]
   },
   "topic_inflation": {
