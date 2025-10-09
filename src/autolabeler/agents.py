@@ -121,6 +121,59 @@ class MultiAgentService:
 
         return "\n".join(prompt_parts)
 
+    def _build_json_schema(self, tasks: list[str]) -> dict[str, Any]:
+        """Build JSON schema for structured output.
+
+        Args:
+            tasks: List of task names to include in schema
+
+        Returns:
+            JSON schema dictionary for response_format parameter
+        """
+        properties = {}
+        required_fields = []
+
+        for task_name in tasks:
+            if task_name not in self.task_configs:
+                continue
+
+            properties[task_name] = {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "description": f"Classification label for {task_name}",
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Confidence score between 0 and 1",
+                    },
+                    "reasoning": {
+                        "type": "string",
+                        "description": "Brief explanation for the classification",
+                    },
+                },
+                "required": ["label", "confidence", "reasoning"],
+                "additionalProperties": False,
+            }
+            required_fields.append(task_name)
+
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "multi_label_classification",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": required_fields,
+                    "additionalProperties": False,
+                },
+            },
+        }
+
     def _parse_response(self, response_text: str, tasks: list[str]) -> MultiLabelResult:
         """Parse LLM response into structured result.
 
@@ -172,24 +225,40 @@ class MultiAgentService:
                 reasoning={task: f"Parse error: {str(e)}" for task in tasks},
             )
 
-    def _call_llm(self, prompt: str) -> str:
-        """Make single LLM call for all tasks.
+    def _call_llm(self, prompt: str, tasks: list[str]) -> str:
+        """Make single LLM call for all tasks with structured output support.
 
         Args:
             prompt: Structured prompt with all tasks
+            tasks: List of task names for schema generation
 
         Returns:
-            LLM response text
+            LLM response text (JSON string)
         """
         try:
-            if self.is_openrouter:
-                # OpenRouter uses OpenAI-compatible interface
-                response = self.client.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=2048,
-                )
-                return response["choices"][0]["message"]["content"]
-            elif self.is_anthropic:
+            if self.is_openrouter or not self.is_anthropic:
+                # OpenRouter and OpenAI support structured outputs
+                json_schema = self._build_json_schema(tasks)
+
+                if self.is_openrouter:
+                    # OpenRouter uses OpenAI-compatible interface
+                    response = self.client.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=2048,
+                        response_format=json_schema,
+                    )
+                    return response["choices"][0]["message"]["content"]
+                else:
+                    # Direct OpenAI client
+                    response = self.client.chat.completions.create(
+                        model=self.settings.llm_model,
+                        temperature=self.settings.temperature,
+                        messages=[{"role": "user", "content": prompt}],
+                        response_format=json_schema,
+                    )
+                    return response.choices[0].message.content
+            else:
+                # Anthropic doesn't support structured outputs, use text parsing
                 response = self.client.messages.create(
                     model=self.settings.llm_model,
                     max_tokens=2048,
@@ -197,13 +266,6 @@ class MultiAgentService:
                     messages=[{"role": "user", "content": prompt}],
                 )
                 return response.content[0].text
-            else:
-                response = self.client.chat.completions.create(
-                    model=self.settings.llm_model,
-                    temperature=self.settings.temperature,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                return response.choices[0].message.content
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
@@ -220,7 +282,7 @@ class MultiAgentService:
             MultiLabelResult with all classifications
         """
         prompt = self._build_prompt(text, tasks)
-        response = self._call_llm(prompt)
+        response = self._call_llm(prompt, tasks)
         return self._parse_response(response, tasks)
 
     def label_with_agents(

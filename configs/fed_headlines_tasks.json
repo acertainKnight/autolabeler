@@ -9,14 +9,14 @@
     ]
   },
   "hawk_dove": {
-    "labels": ["-2", "-1", "0", "1", "2"],
+    "labels": ["-99", "-2", "-1", "0", "1", "2"],
     "principles": [
       "-2 (Explicitly Dovish): Explicit advocacy for rate cuts or increased liquidity. Direct statements like 'rates should be lowered' or 'we need to ease policy'",
       "-1 (Implicitly Dovish): Statements indicating economic weakening that suggests need for cuts. Examples: slowing inflation, weakening labor market, growth concerns, downside risks",
       "0 (Neutral): No clear directional signal. Balanced risk assessment, 'wait and see' approach, economy is 'doing fine', no action needed",
       "1 (Implicitly Hawkish): Statements suggesting economic overheating or pressure for higher rates. Examples: rising inflation, tight labor markets, strong growth, upside risks",
       "2 (Explicitly Hawkish): Explicit calls for rate hikes or tighter policy. Direct statements like 'rates should be raised' or 'we need to tighten policy'",
-      "Only assign hawk_dove scores to RELEVANT headlines. For not_relevant headlines, default to 0"
+      "Only assign hawk_dove scores to RELEVANT headlines. For not_relevant headlines, default to -99"
     ]
   },
   "speaker": {
@@ -24,11 +24,14 @@
     "principles": [
       "Extract the speaker's name from the headline exactly as it appears",
       "If headline starts with *NAME: format, extract NAME (e.g., *POWELL: -> Powell, *SCHMID: -> Schmid)",
-      "If headline includes 'FED PRESIDENT [NAME]', extract the full name (e.g., 'Kansas City Fed President Jeff Schmid' -> Jeff Schmid)",
+      "If headline includes 'FED PRESIDENT [NAME]', extract the full name (e.g., 'Kansas City Fed President Jeff Schmid' -> Schmid)",
       "If headline includes position and name, extract just the name (e.g., 'Fed Chair Jerome Powell' -> Jerome Powell)",
       "Common Fed speakers: Powell, Yellen, Bernanke, Williams, Barkin, Bostic, Waller, Bowman, Cook, Jefferson, Kugler, Kashkari, Mester, Daly, Harker, etc.",
       "If no speaker can be identified, return 'Unknown'",
-      "Preserve capitalization and full names as they appear in headlines"
+      "Preserve capitalization as they appear in headlines",
+      "Do not include titles or positions, only the name",
+      "If multiple names appear, extract the SPEAKER not others mentioned",
+      "Include only the last name for the speaker"
     ]
   },
   "topic_inflation": {
