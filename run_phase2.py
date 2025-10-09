@@ -49,8 +49,10 @@ if __name__ == "__main__":
 
     # Determine total sample size and Phase 2 row count
     # Default to 4x Phase 1 size if not specified
-    max_rows = phase1_count * 4  # e.g., 5000 -> 20000
-    phase2_count = max_rows - phase1_count
+    # max_rows = phase1_count * 5  # e.g., 5000 -> 20000
+    max_rows = 25000  # Fixed at 25,000 for Fed Headlines
+    # phase2_count = max_rows - phase1_count
+    phase2_count = max_rows
 
     print(f"\nPhase 2 Configuration:")
     print(f"  Total sample size: {max_rows}")
@@ -66,7 +68,7 @@ if __name__ == "__main__":
         output_file=phase2_output,
         task_configs_file=task_configs_file,
         learned_rules=learned_rules,
-        skip_first_n=phase1_count,  # Automatically matches Phase 1
+        skip_first_n=0,  #phase1_count,  # Automatically matches Phase 1
         max_rows=max_rows,           # 4x Phase 1 by default
         batch_size=100,
         settings=settings

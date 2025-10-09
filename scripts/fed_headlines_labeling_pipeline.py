@@ -255,7 +255,7 @@ def phase2_full_labeling(
         settings = Settings()
 
     # Set $100 budget for Phase 2
-    settings.llm_budget = 100.0
+    settings.llm_budget = 50.0
     logger.info(f"Budget limit: ${settings.llm_budget:.2f}")
 
     # Initialize services (no rule evolution in Phase 2)

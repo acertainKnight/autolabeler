@@ -5,7 +5,9 @@
       "Headline is RELEVANT if it discusses US monetary policy or the US economy AND is spoken by a Federal Reserve member",
       "Headline is NOT_RELEVANT if about: regulations, Fed independence, crypto/stablecoins, other countries' policies, or spoken by non-Fed members",
       "Relevant topics include: interest rates, inflation, labor markets, economic growth, financial conditions, liquidity, rate cuts/hikes",
-      "The statement must provide insight into the speaker's perspective on rate setting or economic conditions to be relevant"
+      "The statement must provide insight into the speaker's perspective on rate setting or economic conditions to be relevant",
+      "Statements that only report economic data not spoken by a Fed member are NOT_RELEVANT",
+      "Statements can be made by the FED and be relevant as a 'member' (e.g., 'The Fed said...') but not for data reports"
     ]
   },
   "hawk_dove": {
@@ -32,7 +34,8 @@
       "Do not include titles or positions, only the name",
       "If multiple names appear, extract the SPEAKER not others mentioned",
       "Include only the last name for the speaker",
-      "Miran is now a Fed speaker, so include Miran as well"
+      "Miran is now a Fed speaker, so include Miran as well",
+      "If the headline refers to 'The Fed' or 'Federal Reserve' without a specific person, return 'FED'"
     ]
   },
   "topic_inflation": {

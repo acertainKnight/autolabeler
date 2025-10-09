@@ -11,7 +11,7 @@ if __name__ == "__main__":
     output_dir = project_root / "outputs/fed_headlines"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    phase1_output = output_dir / "phase1_labeled_1000.csv"
+    phase1_output = output_dir / "phase1_labeled_5000.csv"
     phase1_rules = output_dir / "phase1_learned_rules.json"
     task_configs_file = project_root / "configs/fed_headlines_tasks.json"
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         input_file=input_file,
         output_file=phase1_output,
         task_configs_file=task_configs_file,
-        n_samples=1000,
+        n_samples=3000,
         batch_size=50,
         confidence_threshold=0.7,
         settings=settings
