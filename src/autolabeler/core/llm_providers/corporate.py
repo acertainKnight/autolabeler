@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import os
 import ssl
-from typing import Any, TypeVar
+from typing import Any, TypeVar, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from langchain_openai import ChatOpenAI
+from langchain_core.language_models.llms import LLMResult
 from pydantic import BaseModel
 from loguru import logger
+
+if TYPE_CHECKING:
+    from ..utils.budget_tracker import CostTracker
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -63,6 +67,7 @@ class CorporateOpenAIClient(ChatOpenAI):
         verify_ssl: bool = True,
         extra_headers: dict[str, str] | None = None,
         timeout: float = 60.0,
+        cost_tracker: "CostTracker | None" = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the Corporate OpenAI client with security validations."""
@@ -112,6 +117,9 @@ class CorporateOpenAIClient(ChatOpenAI):
                 extra_headers=corporate_headers,
                 **kwargs
             )
+
+            # Store cost tracker for tracking (if provided)
+            self._cost_tracker = cost_tracker
 
             logger.info(f"Initialized CorporateOpenAIClient for {self._get_domain(base_url)}")
 
@@ -211,3 +219,71 @@ class CorporateOpenAIClient(ChatOpenAI):
         except Exception as e:
             logger.error(f"Failed to configure structured output for schema {schema.__name__}: {e}")
             raise
+
+    def _generate(self, *args: Any, **kwargs: Any) -> LLMResult:
+        """Synchronous method for generating completions with cost tracking.
+
+        Corporate endpoints typically don't charge, but we still track for monitoring.
+
+        Args:
+            *args: Arguments passed to the parent _generate method.
+            **kwargs: Keyword arguments passed to the parent _generate method.
+
+        Returns:
+            LLMResult: The result from the parent _generate method.
+
+        Raises:
+            Exception: If budget is exceeded before making the call.
+        """
+        # Check budget before making the call
+        if self._cost_tracker:
+            if self._cost_tracker.is_budget_exceeded():
+                from ..utils.budget_tracker import BudgetExceededError
+                stats = self._cost_tracker.get_stats()
+                raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
+        # Make the API call
+        result = super()._generate(*args, **kwargs)
+
+        # Track cost after the call (corporate endpoints typically return 0 cost)
+        if self._cost_tracker:
+            from ..utils.budget_tracker import extract_cost_from_result
+            cost = extract_cost_from_result(result, "corporate", self.model_name)
+            if cost > 0:
+                self._cost_tracker.add_cost(cost)
+
+        return result
+
+    async def _agenerate(self, *args: Any, **kwargs: Any) -> LLMResult:
+        """Asynchronous method for generating completions with cost tracking.
+
+        Corporate endpoints typically don't charge, but we still track for monitoring.
+
+        Args:
+            *args: Arguments passed to the parent _agenerate method.
+            **kwargs: Keyword arguments passed to the parent _agenerate method.
+
+        Returns:
+            LLMResult: The result from the parent _agenerate method.
+
+        Raises:
+            Exception: If budget is exceeded before making the call.
+        """
+        # Check budget before making the call
+        if self._cost_tracker:
+            if self._cost_tracker.is_budget_exceeded():
+                from ..utils.budget_tracker import BudgetExceededError
+                stats = self._cost_tracker.get_stats()
+                raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
+        # Make the API call
+        result = await super()._agenerate(*args, **kwargs)
+
+        # Track cost after the call (corporate endpoints typically return 0 cost)
+        if self._cost_tracker:
+            from ..utils.budget_tracker import extract_cost_from_result
+            cost = extract_cost_from_result(result, "corporate", self.model_name)
+            if cost > 0:
+                self._cost_tracker.add_cost(cost)
+
+        return result

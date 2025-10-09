@@ -23,6 +23,7 @@ class LabelingConfig(BaseModel):
     use_validation: bool = Field(True, description="Use structured output validation with retry")
     validation_max_retries: int = Field(3, description="Maximum validation retry attempts")
     allowed_labels: list[str] | None = Field(None, description="Allowed label values for validation")
+    budget: float | None = Field(None, description="Maximum budget in USD for this labeling run")
 
 
 class BatchConfig(BaseModel):

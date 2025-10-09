@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,3 +51,6 @@ class Settings(BaseSettings):
     # Logging Configuration
     log_level: str = "INFO"
     log_format: str = "{time} | {level} | {message}"
+
+    # Budget Configuration
+    llm_budget: float | None = Field(None, description="Maximum budget in USD for LLM calls")

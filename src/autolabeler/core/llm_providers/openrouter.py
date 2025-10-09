@@ -5,13 +5,16 @@ from __future__ import annotations
 import os
 import time
 import weakref
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import requests
 from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_openai import ChatOpenAI
 from langchain_core.language_models.llms import LLMResult
 from loguru import logger
+
+if TYPE_CHECKING:
+    from ..utils.budget_tracker import CostTracker
 
 
 class OpenRouterError(Exception):
@@ -196,6 +199,7 @@ class OpenRouterClient(ChatOpenAI):
         site_name: str | None = None,
         streaming: bool = False,
         use_rate_limiter: bool = True,
+        cost_tracker: "CostTracker | None" = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the OpenRouter client."""
@@ -237,14 +241,22 @@ class OpenRouterClient(ChatOpenAI):
 
         # Store instance data using a more memory-safe approach
         class InstanceData:
-            def __init__(self, use_rate_limiter: bool, rate_limiter: OpenRouterRateLimiter | None):
+            def __init__(
+                self,
+                use_rate_limiter: bool,
+                rate_limiter: OpenRouterRateLimiter | None,
+                cost_tracker: "CostTracker | None",
+            ):
                 self.use_rate_limiter = use_rate_limiter
                 self.rate_limiter = rate_limiter
+                self.cost_tracker = cost_tracker
 
-        self._instance_data[id(self)] = InstanceData(use_rate_limiter, rate_limiter_instance)
+        self._instance_data[id(self)] = InstanceData(
+            use_rate_limiter, rate_limiter_instance, cost_tracker
+        )
 
     def _generate(self, *args: Any, **kwargs: Any) -> LLMResult:
-        """Synchronous method for generating completions with rate limiting.
+        """Synchronous method for generating completions with rate limiting and cost tracking.
 
         Args:
             *args: Arguments passed to the parent _generate method.
@@ -252,16 +264,37 @@ class OpenRouterClient(ChatOpenAI):
 
         Returns:
             LLMResult: The result from the parent _generate method.
+
+        Raises:
+            Exception: If budget is exceeded before making the call.
         """
         instance_data = self._instance_data.get(id(self))
 
+        # Check budget before making the call
+        if instance_data and instance_data.cost_tracker:
+            if instance_data.cost_tracker.is_budget_exceeded():
+                from ..utils.budget_tracker import BudgetExceededError
+                stats = instance_data.cost_tracker.get_stats()
+                raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
+        # Apply rate limiting
         if instance_data and instance_data.use_rate_limiter and instance_data.rate_limiter:
             instance_data.rate_limiter.acquire()
 
-        return super()._generate(*args, **kwargs)
+        # Make the API call
+        result = super()._generate(*args, **kwargs)
+
+        # Track cost after the call
+        if instance_data and instance_data.cost_tracker:
+            from ..utils.budget_tracker import extract_cost_from_result
+            cost = extract_cost_from_result(result, "openrouter", self.model_name)
+            if cost > 0:
+                instance_data.cost_tracker.add_cost(cost)
+
+        return result
 
     async def _agenerate(self, *args: Any, **kwargs: Any) -> LLMResult:
-        """Asynchronous method for generating completions with rate limiting.
+        """Asynchronous method for generating completions with rate limiting and cost tracking.
 
         Args:
             *args: Arguments passed to the parent _agenerate method.
@@ -269,9 +302,20 @@ class OpenRouterClient(ChatOpenAI):
 
         Returns:
             LLMResult: The result from the parent _agenerate method.
+
+        Raises:
+            Exception: If budget is exceeded before making the call.
         """
         instance_data = self._instance_data.get(id(self))
 
+        # Check budget before making the call
+        if instance_data and instance_data.cost_tracker:
+            if instance_data.cost_tracker.is_budget_exceeded():
+                from ..utils.budget_tracker import BudgetExceededError
+                stats = instance_data.cost_tracker.get_stats()
+                raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
+        # Apply rate limiting
         if instance_data and instance_data.use_rate_limiter and instance_data.rate_limiter:
             # For async, we need to run the blocking acquire in a thread pool
             import asyncio
@@ -279,4 +323,14 @@ class OpenRouterClient(ChatOpenAI):
                 None, instance_data.rate_limiter.acquire
             )
 
-        return await super()._agenerate(*args, **kwargs)
+        # Make the API call
+        result = await super()._agenerate(*args, **kwargs)
+
+        # Track cost after the call
+        if instance_data and instance_data.cost_tracker:
+            from ..utils.budget_tracker import extract_cost_from_result
+            cost = extract_cost_from_result(result, "openrouter", self.model_name)
+            if cost > 0:
+                instance_data.cost_tracker.add_cost(cost)
+
+        return result
