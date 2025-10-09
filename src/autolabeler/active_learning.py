@@ -117,9 +117,6 @@ class RuleEvolutionService:
             Suggested new rule or None if generation fails
         """
         try:
-            from anthropic import Anthropic
-            from openai import OpenAI
-
             prompt = f"""You are a rule generation system for classification tasks.
 
 Task: {task_name}
@@ -135,7 +132,22 @@ Generate ONE specific, actionable rule that would help reduce this error pattern
 The rule should be concise, clear, and directly address the issue.
 Return ONLY the rule text, no explanation."""
 
-            if self.settings.llm_provider == "anthropic":
+            if self.settings.llm_provider == "openrouter":
+                from .openrouter_client import OpenRouterClient
+
+                client = OpenRouterClient(
+                    api_key=self.settings.openrouter_api_key,
+                    model=self.settings.llm_model,
+                    temperature=0.3,
+                    use_rate_limiter=True,
+                )
+                response = client.create(
+                    messages=[{"role": "user", "content": prompt}], max_tokens=256
+                )
+                new_rule = response["choices"][0]["message"]["content"].strip()
+            elif self.settings.llm_provider == "anthropic":
+                from anthropic import Anthropic
+
                 client = Anthropic(api_key=self.settings.anthropic_api_key)
                 response = client.messages.create(
                     model=self.settings.llm_model,
@@ -145,6 +157,8 @@ Return ONLY the rule text, no explanation."""
                 )
                 new_rule = response.content[0].text.strip()
             else:
+                from openai import OpenAI
+
                 client = OpenAI(api_key=self.settings.openai_api_key)
                 response = client.chat.completions.create(
                     model=self.settings.llm_model,

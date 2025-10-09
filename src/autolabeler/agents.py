@@ -49,15 +49,32 @@ class MultiAgentService:
 
     def _initialize_client(self):
         """Initialize LLM client based on settings."""
-        from anthropic import Anthropic
-        from openai import OpenAI
+        if self.settings.llm_provider == "openrouter":
+            from .openrouter_client import OpenRouterClient
 
-        if self.settings.llm_provider == "anthropic":
+            self.client = OpenRouterClient(
+                api_key=self.settings.openrouter_api_key,
+                model=self.settings.llm_model,
+                temperature=self.settings.temperature,
+                use_rate_limiter=True,  # Enable 500 req/sec rate limiting
+            )
+            self.is_anthropic = False
+            self.is_openrouter = True
+            logger.info(
+                f"Initialized OpenRouter client with model {self.settings.llm_model} and rate limiting"
+            )
+        elif self.settings.llm_provider == "anthropic":
+            from anthropic import Anthropic
+
             self.client = Anthropic(api_key=self.settings.anthropic_api_key)
             self.is_anthropic = True
+            self.is_openrouter = False
         else:
+            from openai import OpenAI
+
             self.client = OpenAI(api_key=self.settings.openai_api_key)
             self.is_anthropic = False
+            self.is_openrouter = False
 
     def _build_prompt(self, text: str, tasks: list[str]) -> str:
         """Build structured prompt for multi-label classification.
@@ -165,7 +182,14 @@ class MultiAgentService:
             LLM response text
         """
         try:
-            if self.is_anthropic:
+            if self.is_openrouter:
+                # OpenRouter uses OpenAI-compatible interface
+                response = self.client.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=2048,
+                )
+                return response["choices"][0]["message"]["content"]
+            elif self.is_anthropic:
                 response = self.client.messages.create(
                     model=self.settings.llm_model,
                     max_tokens=2048,

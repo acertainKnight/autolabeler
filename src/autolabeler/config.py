@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     # Default model selections
     llm_model: str = "meta-llama/llama-3.1-8b-instruct:free"
+    llm_provider: str = "openrouter"  # openrouter, openai, or corporate
+    temperature: float = 0.1
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     # Knowledge Store & RAG
