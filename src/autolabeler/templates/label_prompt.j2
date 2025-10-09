@@ -75,7 +75,7 @@ Consider the provided context information when making your labeling decision. Pa
 Please provide your analysis with:
 1. **Label**: An appropriate label that best categorizes this text{% if context_metadata %} given the context{% endif %}
 2. **Confidence**: A confidence level (0.0-1.0) for your labeling decision
-3. **Reasoning**: Brief explanation of why this label was chosen{% if examples %}, referencing patterns from the similar examples if relevant{% endif %}
+3. **Reasoning**: One sentence explanation of why this label was chosen{% if examples %}, referencing patterns from the similar examples if relevant{% endif %}
 4. **Metadata**: Any relevant metadata that supports your decision{% if context_metadata %}, including how the context influenced your choice{% endif %}
 
 {% if examples %}
