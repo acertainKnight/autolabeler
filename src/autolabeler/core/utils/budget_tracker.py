@@ -119,8 +119,10 @@ class BudgetExceededError(Exception):
 def extract_openrouter_cost(result: LLMResult) -> float:
     """Extract cost information from OpenRouter API response.
 
-    OpenRouter returns cost information in the generation_id field as a JSON string
-    containing usage statistics and cost breakdown.
+    OpenRouter returns cost information in multiple possible locations:
+    1. response_metadata (in the AIMessage) - most common for direct cost
+    2. llm_output (in the LLMResult) - contains usage and cost details
+    3. Usage-based calculation as fallback
 
     Args:
         result: LangChain LLMResult from OpenRouter API call
@@ -129,17 +131,20 @@ def extract_openrouter_cost(result: LLMResult) -> float:
         float: Total cost in USD, or 0.0 if cost information not available
 
     Example response data structure:
-        {
-            "id": "gen-...",
-            "model": "meta-llama/llama-3.1-8b-instruct:free",
+        response_metadata: {
+            "total_cost": 0.000234,
+            "usage": {...}
+        }
+        OR
+        llm_output: {
             "usage": {
                 "prompt_tokens": 150,
                 "completion_tokens": 50,
                 "total_tokens": 200
             },
+            "total_cost": 0.000234,
             "native_tokens_prompt": 150,
-            "native_tokens_completion": 50,
-            "total_cost": 0.000234
+            "native_tokens_completion": 50
         }
     """
     try:
@@ -154,35 +159,76 @@ def extract_openrouter_cost(result: LLMResult) -> float:
             logger.debug("Generation is not ChatGeneration")
             return 0.0
 
-        # Check for response_metadata in the message
+        # Strategy 1: Check response_metadata in the AIMessage
         message = generation.message
-        if not isinstance(message, AIMessage):
-            logger.debug("Message is not AIMessage")
-            return 0.0
+        if isinstance(message, AIMessage):
+            response_metadata = getattr(message, "response_metadata", {})
 
-        response_metadata = getattr(message, "response_metadata", {})
+            # Try to extract cost from response_metadata
+            total_cost = (
+                response_metadata.get("total_cost") or
+                response_metadata.get("cost") or
+                0.0
+            )
 
-        # Try to extract cost from various possible locations
-        # OpenRouter may return cost in different fields depending on API version
+            if total_cost > 0:
+                logger.debug(f"Extracted OpenRouter cost from response_metadata: ${total_cost:.6f}")
+                return float(total_cost)
+
+            # Log usage from response_metadata for debugging
+            usage = response_metadata.get("usage", {})
+            if usage:
+                logger.debug(
+                    f"OpenRouter usage in response_metadata: "
+                    f"prompt={usage.get('prompt_tokens')}, "
+                    f"completion={usage.get('completion_tokens')}, "
+                    f"total={usage.get('total_tokens')}"
+                )
+
+        # Strategy 2: Check llm_output in the LLMResult (primary location for OpenRouter)
+        llm_output = result.llm_output or {}
+
+        # Extract cost from llm_output
         total_cost = (
-            response_metadata.get("total_cost") or
-            response_metadata.get("cost") or
+            llm_output.get("total_cost") or
+            llm_output.get("cost") or
             0.0
         )
 
         if total_cost > 0:
-            logger.debug(f"Extracted OpenRouter cost: ${total_cost:.6f}")
+            logger.debug(f"Extracted OpenRouter cost from llm_output: ${total_cost:.6f}")
             return float(total_cost)
 
-        # If no direct cost, try to log usage for debugging
-        usage = response_metadata.get("usage", {})
+        # Strategy 3: Check usage in llm_output
+        usage = llm_output.get("usage", {})
         if usage:
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+
             logger.debug(
-                f"OpenRouter usage: prompt={usage.get('prompt_tokens')}, "
-                f"completion={usage.get('completion_tokens')}, "
-                f"total={usage.get('total_tokens')}"
+                f"OpenRouter usage in llm_output: "
+                f"prompt={prompt_tokens}, "
+                f"completion={completion_tokens}, "
+                f"total={usage.get('total_tokens', 0)}"
             )
 
+            # Check if there's cost data embedded in usage
+            usage_cost = usage.get("total_cost") or usage.get("cost")
+            if usage_cost and usage_cost > 0:
+                logger.debug(f"Extracted OpenRouter cost from usage field: ${usage_cost:.6f}")
+                return float(usage_cost)
+
+        # Strategy 4: Check for native_tokens fields with cost
+        native_prompt = llm_output.get("native_tokens_prompt")
+        native_completion = llm_output.get("native_tokens_completion")
+        if native_prompt or native_completion:
+            logger.debug(
+                f"OpenRouter native tokens: "
+                f"prompt={native_prompt}, completion={native_completion}"
+            )
+
+        # If we got here, no cost was found
+        logger.debug("No cost information found in OpenRouter response")
         return 0.0
 
     except Exception as e:

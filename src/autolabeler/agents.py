@@ -52,18 +52,27 @@ class MultiAgentService:
         self.task_configs = {
             name: TaskConfig(**config) for name, config in task_configs.items()
         }
+        self.cost_tracker = None  # Will be initialized if budget is set
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize LLM client based on settings."""
+        """Initialize LLM client based on settings with cost tracking."""
+        from .core.utils.budget_tracker import CostTracker
+
+        # Create cost tracker if budget is specified
+        if self.settings.llm_budget is not None:
+            self.cost_tracker = CostTracker(budget=self.settings.llm_budget)
+            logger.info(f"Cost tracking enabled with budget: ${self.settings.llm_budget:.2f}")
+
         if self.settings.llm_provider == "openrouter":
-            from .openrouter_client import OpenRouterClient
+            from .core.llm_providers.openrouter import OpenRouterClient
 
             self.client = OpenRouterClient(
                 api_key=self.settings.openrouter_api_key,
                 model=self.settings.llm_model,
                 temperature=self.settings.temperature,
                 use_rate_limiter=True,  # Enable 500 req/sec rate limiting
+                cost_tracker=self.cost_tracker,  # Pass cost tracker to client
             )
             self.is_anthropic = False
             self.is_openrouter = True
@@ -76,12 +85,16 @@ class MultiAgentService:
             self.client = Anthropic(api_key=self.settings.anthropic_api_key)
             self.is_anthropic = True
             self.is_openrouter = False
+            if self.cost_tracker:
+                logger.warning("Cost tracking not yet implemented for Anthropic provider")
         else:
             from openai import OpenAI
 
             self.client = OpenAI(api_key=self.settings.openai_api_key)
             self.is_anthropic = False
             self.is_openrouter = False
+            if self.cost_tracker:
+                logger.warning("Cost tracking not yet implemented for OpenAI direct provider")
 
     def _build_prompt(self, text: str, tasks: list[str]) -> str:
         """Build structured prompt for multi-label classification.
@@ -249,6 +262,12 @@ class MultiAgentService:
 
         try:
             if self.is_openrouter:
+                # Check budget before making call
+                if self.cost_tracker and self.cost_tracker.is_budget_exceeded():
+                    from .core.utils.budget_tracker import BudgetExceededError
+                    stats = self.cost_tracker.get_stats()
+                    raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
                 # OpenRouter async call
                 json_schema = self._build_json_schema(tasks)
 
@@ -273,6 +292,36 @@ class MultiAgentService:
                     )
                     response.raise_for_status()
                     data = response.json()
+
+                    # Track cost after successful call
+                    if self.cost_tracker:
+                        from .core.utils.budget_tracker import extract_cost_from_result, BudgetExceededError
+                        from langchain_core.outputs import ChatGeneration, LLMResult
+                        from langchain_core.messages import AIMessage
+
+                        # Convert httpx response to LLMResult format for cost extraction
+                        message = AIMessage(
+                            content=data["choices"][0]["message"]["content"],
+                            response_metadata=data.get("usage", {})
+                        )
+
+                        # Add total_cost if available in response
+                        if "usage" in data and "total_cost" in data["usage"]:
+                            message.response_metadata["total_cost"] = data["usage"]["total_cost"]
+
+                        generation = ChatGeneration(message=message)
+                        llm_result = LLMResult(generations=[[generation]])
+
+                        cost = extract_cost_from_result(llm_result, "openrouter", self.settings.llm_model)
+                        if cost > 0:
+                            within_budget = self.cost_tracker.add_cost(cost)
+                            logger.debug(f"Tracked async call cost: ${cost:.6f}")
+
+                            # Check if budget exceeded after adding cost
+                            if not within_budget:
+                                stats = self.cost_tracker.get_stats()
+                                raise BudgetExceededError(stats["total_cost"], stats["budget"])
+
                     return data["choices"][0]["message"]["content"]
             else:
                 # Fallback to sync for non-OpenRouter
@@ -298,13 +347,11 @@ class MultiAgentService:
                 json_schema = self._build_json_schema(tasks)
 
                 if self.is_openrouter:
-                    # OpenRouter uses OpenAI-compatible interface
-                    response = self.client.create(
-                        messages=[{"role": "user", "content": prompt}],
-                        max_tokens=2048,
-                        response_format=json_schema,
-                    )
-                    return response["choices"][0]["message"]["content"]
+                    # OpenRouter uses LangChain's invoke interface
+                    from langchain_core.messages import HumanMessage
+                    messages = [HumanMessage(content=prompt)]
+                    response = self.client.invoke(messages)
+                    return response.content
                 else:
                     # Direct OpenAI client
                     response = self.client.chat.completions.create(
@@ -405,7 +452,17 @@ class MultiAgentService:
 
         # Process all concurrently
         logger.info(f"Processing {len(async_tasks)} rows concurrently...")
-        results = await asyncio.gather(*async_tasks, return_exceptions=True)
+        try:
+            results = await asyncio.gather(*async_tasks, return_exceptions=False)
+        except Exception as e:
+            # Check if it's a budget error - if so, re-raise to stop processing
+            from .core.utils.budget_tracker import BudgetExceededError
+            if isinstance(e, BudgetExceededError):
+                logger.warning(f"Budget exceeded during batch processing: {e}")
+                raise
+            # For other errors, log and continue
+            logger.error(f"Error during concurrent processing: {e}")
+            raise
 
         # Store results
         for idx, result in zip(indices, results):
@@ -471,3 +528,31 @@ class MultiAgentService:
                 logger.info(f"Updated principles for task '{task_name}'")
             else:
                 logger.warning(f"Task '{task_name}' not found, cannot update")
+
+    def get_cost_stats(self) -> dict[str, Any] | None:
+        """Get cost tracking statistics.
+
+        Returns:
+            Dictionary with cost statistics or None if cost tracking not enabled
+        """
+        if self.cost_tracker:
+            return self.cost_tracker.get_stats()
+        return None
+
+    def log_cost_summary(self):
+        """Log a summary of costs incurred during labeling."""
+        if self.cost_tracker:
+            stats = self.cost_tracker.get_stats()
+            logger.info("=" * 60)
+            logger.info("COST TRACKING SUMMARY")
+            logger.info("=" * 60)
+            logger.info(f"Total API Calls: {stats['call_count']}")
+            logger.info(f"Total Cost: ${stats['total_cost']:.4f}")
+            if stats['budget'] is not None:
+                logger.info(f"Budget Limit: ${stats['budget']:.2f}")
+                logger.info(f"Remaining Budget: ${stats['remaining_budget']:.4f}")
+                budget_used_pct = (stats['total_cost'] / stats['budget']) * 100
+                logger.info(f"Budget Used: {budget_used_pct:.1f}%")
+            logger.info("=" * 60)
+        else:
+            logger.info("Cost tracking not enabled (no budget set)")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 import weakref
@@ -24,7 +25,10 @@ class OpenRouterError(Exception):
 
 
 class OpenRouterRateLimiter:
-    """Rate limiter for the OpenRouter API based on available credits."""
+    """Rate limiter for the OpenRouter API based on available credits.
+
+    Uses asyncio.Semaphore for true concurrent rate limiting that doesn't block async operations.
+    """
 
     def __init__(
         self,
@@ -47,6 +51,8 @@ class OpenRouterRateLimiter:
         self.check_interval = check_interval
         self.credits: float | None = None
         self.rate_limiter: InMemoryRateLimiter | None = None
+        self._async_semaphore: asyncio.Semaphore | None = None
+        self._max_concurrent: int = max_surge_limit
 
     def _get_credits(self) -> float | None:
         """Get the available credits for the API key.
@@ -110,13 +116,17 @@ class OpenRouterRateLimiter:
 
         if self.credits is None:
             requests_per_second = self.min_requests_per_second
+            # Default to max_surge_limit for concurrent requests when credits unknown
+            max_concurrent = self.max_surge_limit
             logger.warning(
-                "Unable to determine credits. Setting rate limit to %s req/s",
+                "Unable to determine credits. Setting rate limit to %s req/s with %s max concurrent",
                 requests_per_second,
+                max_concurrent,
             )
         else:
             if self.credits < 1:
                 requests_per_second = self.min_requests_per_second
+                max_concurrent = int(self.min_requests_per_second * 2)
             else:
                 # Scale rate limiting based on available credits
                 # More credits = higher rate limit (up to max_surge_limit)
@@ -124,11 +134,14 @@ class OpenRouterRateLimiter:
                     float(self.credits) * 0.1,  # Conservative scaling factor
                     float(self.max_surge_limit)
                 )
+                # Allow concurrent requests up to the rate limit
+                max_concurrent = min(int(requests_per_second), self.max_surge_limit)
 
             logger.info(
-                "Available credits: %s, setting rate limit to %s req/s",
+                "Available credits: %s, setting rate limit to %s req/s with %s max concurrent",
                 self.credits,
                 requests_per_second,
+                max_concurrent,
             )
 
         self.rate_limiter = InMemoryRateLimiter(
@@ -136,6 +149,10 @@ class OpenRouterRateLimiter:
             check_every_n_seconds=self.check_interval,
             max_bucket_size=min(10, int(requests_per_second * 2)),
         )
+
+        # Create async semaphore for concurrent request control
+        self._max_concurrent = max_concurrent
+        self._async_semaphore = asyncio.Semaphore(max_concurrent)
 
     def acquire(self) -> None:
         """Acquire permission to make a request."""
@@ -156,6 +173,19 @@ class OpenRouterRateLimiter:
         if self.rate_limiter is None:
             self.setup()
         return self.rate_limiter
+
+    async def acquire_async(self) -> None:
+        """Acquire permission to make a request (async version using semaphore)."""
+        if self._async_semaphore is None:
+            self.setup()
+
+        if self._async_semaphore:
+            await self._async_semaphore.acquire()
+
+    def release_async(self) -> None:
+        """Release a request slot (for async semaphore)."""
+        if self._async_semaphore:
+            self._async_semaphore.release()
 
 
 class OpenRouterClient(ChatOpenAI):
@@ -227,6 +257,13 @@ class OpenRouterClient(ChatOpenAI):
             "HTTP-Referer": site_url or "http://localhost:8000",
             "X-Title": site_name or "AutoLabeler",
         }
+
+        # Enable usage tracking to receive cost information in API responses
+        # Per OpenRouter docs: https://openrouter.ai/docs/use-cases/usage-accounting
+        # This adds a few hundred milliseconds to responses but provides accurate cost data
+        model_kwargs = kwargs.get("model_kwargs", {})
+        model_kwargs["usage"] = {"include": True}
+        kwargs["model_kwargs"] = model_kwargs
 
         super().__init__(
             api_key=api_key,
@@ -315,22 +352,23 @@ class OpenRouterClient(ChatOpenAI):
                 stats = instance_data.cost_tracker.get_stats()
                 raise BudgetExceededError(stats["total_cost"], stats["budget"])
 
-        # Apply rate limiting
+        # Apply rate limiting using async semaphore (non-blocking)
         if instance_data and instance_data.use_rate_limiter and instance_data.rate_limiter:
-            # For async, we need to run the blocking acquire in a thread pool
-            import asyncio
-            await asyncio.get_event_loop().run_in_executor(
-                None, instance_data.rate_limiter.acquire
-            )
+            await instance_data.rate_limiter.acquire_async()
 
-        # Make the API call
-        result = await super()._agenerate(*args, **kwargs)
+        try:
+            # Make the API call
+            result = await super()._agenerate(*args, **kwargs)
 
-        # Track cost after the call
-        if instance_data and instance_data.cost_tracker:
-            from ..utils.budget_tracker import extract_cost_from_result
-            cost = extract_cost_from_result(result, "openrouter", self.model_name)
-            if cost > 0:
-                instance_data.cost_tracker.add_cost(cost)
+            # Track cost after the call
+            if instance_data and instance_data.cost_tracker:
+                from ..utils.budget_tracker import extract_cost_from_result
+                cost = extract_cost_from_result(result, "openrouter", self.model_name)
+                if cost > 0:
+                    instance_data.cost_tracker.add_cost(cost)
 
-        return result
+            return result
+        finally:
+            # Release semaphore slot
+            if instance_data and instance_data.use_rate_limiter and instance_data.rate_limiter:
+                instance_data.rate_limiter.release_async()

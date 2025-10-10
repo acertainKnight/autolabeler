@@ -134,47 +134,103 @@ def phase1_learn_rules(
 
     rule_evolution = RuleEvolutionService(
         initial_rules=initial_principles,
+        core_rules=initial_principles,  # Protect original config rules from modification
         improvement_strategy="feedback_driven",
         settings=settings
     )
 
-    # Process in batches with rule evolution
+    # Check for existing checkpoint to resume from
+    checkpoint_dir = output_file.parent / "checkpoints"
+    checkpoint_dir.mkdir(exist_ok=True)
+    checkpoint_file = checkpoint_dir / f"{output_file.stem}_checkpoint.csv"
+    checkpoint_rules_file = checkpoint_dir / f"{output_file.stem}_rules_checkpoint.json"
+
+    start_batch = 0
     all_results = []
+
+    # Resume from checkpoint if exists
+    if checkpoint_file.exists():
+        logger.info(f"Found checkpoint at {checkpoint_file}, resuming...")
+        checkpoint_df = pd.read_csv(checkpoint_file)
+        all_results.append(checkpoint_df)
+        start_batch = len(checkpoint_df) // batch_size
+        logger.info(f"Resuming from batch {start_batch + 1} (already processed {len(checkpoint_df)} rows)")
+
+        # Load checkpoint rules if available
+        if checkpoint_rules_file.exists():
+            with open(checkpoint_rules_file) as f:
+                checkpoint_rules = json.load(f)
+            constitutional.update_principles(checkpoint_rules)
+            multi_agent.update_task_configs(checkpoint_rules)
+            logger.info("Loaded checkpoint rules")
+
+    # Process in batches with rule evolution
     total_batches = (len(sample_df) + batch_size - 1) // batch_size
 
-    for batch_idx in range(total_batches):
+    for batch_idx in range(start_batch, total_batches):
+        # Check budget before starting batch
+        if multi_agent.cost_tracker and multi_agent.cost_tracker.is_budget_exceeded():
+            logger.warning("Budget exceeded, stopping processing")
+            logger.info(f"Processed {batch_idx * batch_size} / {len(sample_df)} rows before budget limit")
+            break
+
         start_idx = batch_idx * batch_size
         end_idx = min(start_idx + batch_size, len(sample_df))
         batch_df = sample_df.iloc[start_idx:end_idx].copy()
 
         logger.info(f"\nBatch {batch_idx + 1}/{total_batches} (rows {start_idx}-{end_idx})")
 
-        # Label batch
-        labeled_batch = multi_agent.label_with_agents(batch_df, "headline", task_list)
-        all_results.append(labeled_batch)
+        try:
+            # Label batch
+            labeled_batch = multi_agent.label_with_agents(batch_df, "headline", task_list)
+            all_results.append(labeled_batch)
 
-        # Rule evolution: check for uncertain predictions (skip last batch)
-        if batch_idx < total_batches - 1:
-            uncertain_rows = []
-            for task in task_list:
-                conf_col = f"confidence_{task}"
-                uncertain = labeled_batch[labeled_batch[conf_col] < confidence_threshold]
-                if len(uncertain) > 0:
-                    uncertain_rows.append(uncertain)
+            # Save checkpoint after each batch
+            checkpoint_progress = pd.concat(all_results, ignore_index=True)
+            checkpoint_progress.to_csv(checkpoint_file, index=False)
+            logger.info(f"  Checkpoint saved: {len(checkpoint_progress)} rows")
 
-            if uncertain_rows:
-                feedback_df = pd.concat(uncertain_rows, ignore_index=True)
-                logger.info(f"  Found {len(feedback_df)} uncertain predictions, improving rules...")
+            # Rule evolution: check for uncertain predictions (skip last batch)
+            if batch_idx < total_batches - 1:
+                uncertain_rows = []
+                for task in task_list:
+                    conf_col = f"confidence_{task}"
+                    uncertain = labeled_batch[labeled_batch[conf_col] < confidence_threshold]
+                    if len(uncertain) > 0:
+                        uncertain_rows.append(uncertain)
 
-                # Improve rules
-                current_rules = constitutional.get_principles()
-                updated_rules = rule_evolution.improve_rules(current_rules, feedback_df)
+                if uncertain_rows:
+                    feedback_df = pd.concat(uncertain_rows, ignore_index=True)
+                    logger.info(f"  Found {len(feedback_df)} uncertain predictions, improving rules...")
 
-                # Update services
-                constitutional.update_principles(updated_rules)
-                multi_agent.update_task_configs(updated_rules)
+                    # Improve rules
+                    current_rules = constitutional.get_principles()
+                    updated_rules = rule_evolution.improve_rules(current_rules, feedback_df)
 
-                logger.info("  Rules updated for next batch")
+                    # Update services
+                    constitutional.update_principles(updated_rules)
+                    multi_agent.update_task_configs(updated_rules)
+
+                    # Save rules checkpoint
+                    with open(checkpoint_rules_file, 'w') as f:
+                        json.dump(updated_rules, f, indent=2)
+
+                    logger.info("  Rules updated for next batch")
+
+        except Exception as e:
+            from autolabeler.core.utils.budget_tracker import BudgetExceededError
+
+            # If budget exceeded, save progress and stop gracefully
+            if isinstance(e, BudgetExceededError):
+                logger.warning(f"Budget exceeded: {e}")
+                logger.info(f"Progress saved to checkpoint: {checkpoint_file}")
+                logger.info(f"Processed {len(all_results)} batches before budget limit")
+                break
+
+            # For other errors, log and re-raise
+            logger.error(f"Error processing batch {batch_idx + 1}: {e}")
+            logger.info(f"Progress saved to checkpoint: {checkpoint_file}")
+            raise
 
     # Combine results
     final_df = pd.concat(all_results, ignore_index=True)
@@ -183,6 +239,17 @@ def phase1_learn_rules(
     final_df.to_csv(output_file, index=False)
     logger.info(f"\nPhase 1 complete: {len(final_df)} rows labeled")
     logger.info(f"Results saved to: {output_file}")
+
+    # Clean up checkpoint files on successful completion
+    if checkpoint_file.exists():
+        checkpoint_file.unlink()
+        logger.info("Checkpoint file removed (processing complete)")
+    if checkpoint_rules_file.exists():
+        checkpoint_rules_file.unlink()
+        logger.info("Checkpoint rules file removed (processing complete)")
+
+    # Log cost summary
+    multi_agent.log_cost_summary()
 
     # Get and save learned rules
     learned_rules = constitutional.get_principles()
@@ -262,24 +329,50 @@ def phase2_full_labeling(
     multi_agent = MultiAgentService(settings, task_configs)
     logger.info(f"Using learned rules from Phase 1 for {len(task_list)} tasks")
 
-    # Process in batches
+    # Check for existing checkpoint to resume from
+    checkpoint_dir = output_file.parent / "checkpoints"
+    checkpoint_dir.mkdir(exist_ok=True)
+    checkpoint_file = checkpoint_dir / f"{output_file.stem}_checkpoint.csv"
+
+    start_batch = 0
     all_results = []
+
+    # Resume from checkpoint if exists
+    if checkpoint_file.exists():
+        logger.info(f"Found checkpoint at {checkpoint_file}, resuming...")
+        checkpoint_df = pd.read_csv(checkpoint_file)
+        all_results.append(checkpoint_df)
+        start_batch = len(checkpoint_df) // batch_size
+        logger.info(f"Resuming from batch {start_batch + 1} (already processed {len(checkpoint_df)} rows)")
+
+    # Process in batches
     total_batches = (len(phase2_df) + batch_size - 1) // batch_size
 
-    for batch_idx in range(total_batches):
+    for batch_idx in range(start_batch, total_batches):
         start_idx = batch_idx * batch_size
         end_idx = min(start_idx + batch_size, len(phase2_df))
         batch_df = phase2_df.iloc[start_idx:end_idx].copy()
 
         logger.info(f"Batch {batch_idx + 1}/{total_batches} (rows {start_idx + skip_first_n}-{end_idx + skip_first_n})")
 
-        # Label batch
-        labeled_batch = multi_agent.label_with_agents(batch_df, "headline", task_list)
-        all_results.append(labeled_batch)
+        try:
+            # Label batch
+            labeled_batch = multi_agent.label_with_agents(batch_df, "headline", task_list)
+            all_results.append(labeled_batch)
 
-        # Log progress every 10 batches
-        if (batch_idx + 1) % 10 == 0:
-            logger.info(f"  Processed {(batch_idx + 1) * batch_size} / {len(phase2_df)} rows")
+            # Save checkpoint after each batch
+            checkpoint_progress = pd.concat(all_results, ignore_index=True)
+            checkpoint_progress.to_csv(checkpoint_file, index=False)
+
+            # Log progress every 10 batches
+            if (batch_idx + 1) % 10 == 0:
+                logger.info(f"  Processed {(batch_idx + 1) * batch_size} / {len(phase2_df)} rows")
+                logger.info(f"  Checkpoint saved: {len(checkpoint_progress)} rows")
+
+        except Exception as e:
+            logger.error(f"Error processing batch {batch_idx + 1}: {e}")
+            logger.info(f"Progress saved to checkpoint: {checkpoint_file}")
+            raise
 
     # Combine results
     final_df = pd.concat(all_results, ignore_index=True)
@@ -288,6 +381,14 @@ def phase2_full_labeling(
     final_df.to_csv(output_file, index=False)
     logger.info(f"\nPhase 2 complete: {len(final_df)} rows labeled")
     logger.info(f"Results saved to: {output_file}")
+
+    # Clean up checkpoint file on successful completion
+    if checkpoint_file.exists():
+        checkpoint_file.unlink()
+        logger.info("Checkpoint file removed (processing complete)")
+
+    # Log cost summary
+    multi_agent.log_cost_summary()
 
     # Log confidence statistics
     for task in task_list:
