@@ -1,0 +1,40 @@
+# Trade Policy Uncertainty Dataset Configuration
+
+name: tpu
+labels: ["0", "1"]
+text_column: text
+input_format: jsonl
+
+# Pipeline stages
+# Binary task - simpler pipeline
+use_relevancy_gate: false
+use_candidate_annotation: false  # Less ambiguity in binary classification
+use_typed_rag: false
+
+# Jury: 3 models for consensus
+jury_models:
+  - provider: openai
+    model: gpt-4o
+    name: GPT-4o
+    has_logprobs: true
+    self_consistency_samples: 0
+  
+  - provider: anthropic
+    model: claude-sonnet-4-5-20250929
+    name: Claude
+    has_logprobs: false
+    self_consistency_samples: 3
+  
+  - provider: google
+    model: gemini-2.5-pro
+    name: Gemini
+    has_logprobs: false
+    self_consistency_samples: 3
+
+# Temperature settings
+jury_temperature: 0.1
+sc_temperature: 0.3
+
+# Budget and batching
+budget_per_model: 10.0
+batch_size: 10

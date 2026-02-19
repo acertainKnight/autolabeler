@@ -1,6 +1,5 @@
-"""Labeling service components for AutoLabeler."""
+"""Labeling services and pipelines."""
 
-from .labeling_service import LabelingService
-from .optimized_labeling_service import OptimizedLabelingService
+from autolabeler.core.labeling.pipeline import LabelingPipeline, LabelResult
 
-__all__ = ["LabelingService", "OptimizedLabelingService"]
+__all__ = ['LabelingPipeline', 'LabelResult']

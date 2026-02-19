@@ -1,8 +1,9 @@
-"""
-Utility functions for AutoLabeler.
+"""Utility functions for data processing and evaluation."""
 
-This module contains shared utilities and helper functions for evaluation and data handling.
-"""
-from . import data_utils, evaluation_utils, ruleset_utils
+from . import evaluation_utils
+from . import data_utils
 
-__all__ = ["data_utils", "evaluation_utils", "ruleset_utils"]
+__all__ = [
+    'evaluation_utils',
+    'data_utils',
+]

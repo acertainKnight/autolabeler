@@ -1,12 +1,25 @@
 """
 LLM provider clients for AutoLabeler.
 
-This module contains clients for interacting with various LLM providers,
-such as OpenRouter and corporate-hosted endpoints.
+Unified provider interface for OpenAI, Anthropic, Google, and OpenRouter.
 """
 
-from .openrouter import OpenRouterClient
-from .corporate import CorporateOpenAIClient
-from .factory import get_llm_client
+from .providers import (
+    LLMProvider,
+    LLMResponse,
+    OpenAIProvider,
+    AnthropicProvider,
+    GoogleProvider,
+    OpenRouterProvider,
+    get_provider,
+)
 
-__all__ = ["OpenRouterClient", "CorporateOpenAIClient", "get_llm_client"]
+__all__ = [
+    "LLMProvider",
+    "LLMResponse",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "GoogleProvider",
+    "OpenRouterProvider",
+    "get_provider",
+]

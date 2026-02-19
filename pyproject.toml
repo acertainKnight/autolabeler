@@ -3,8 +3,8 @@ requires = ["setuptools >= 60.0.0", "wheel", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "template"
-description = "Template for python projects"
+name = "autolabeler"
+description = "Unified data labeling automation service with LLM-powered jury pipelines"
 readme = "README.md"
 requires-python = ">=3.10, <3.13"
 version = '0.0.0'
@@ -23,6 +23,7 @@ dependencies = [
     'faiss-cpu>=1.7',
     'click>=8.0',
     'markdown>=3.4',
+    'pyyaml>=6.0',
     "pydantic-settings>=2.9.1",
     "langchain-openai>=0.3.21",
     "sentence-transformers>=4.1.0",
@@ -38,10 +39,9 @@ dependencies = [
     'python-louvain>=0.16', # GraphRAG community detection
     'umap-learn>=0.5.0', # RAPTOR dimensionality reduction
     'rank-bm25>=0.2.2', # Hybrid search BM25 component
-    # Phase 3 dependencies
-    'langgraph>=0.2.0', # Multi-agent orchestration
-    'langsmith>=0.2.0', # Agent monitoring
-    'evidently>=0.5.8', # Drift detection
+    # Core LLM providers
+    'anthropic>=0.39.0',
+    'google-generativeai>=0.8.3',
     "dspy-ai>=3.0.3",
 ]
 
@@ -102,11 +102,11 @@ dpo = [
     'torch>=2.0.0',  # PyTorch backend
 ]
 
-# Install all Phase 3 features (without DPO/RLHF)
+# Install all Phase 3 features (archived - kept for reference)
 phase3 = [
-    'langgraph>=0.2.0',
-    'langsmith>=0.2.0',
-    'evidently>=0.5.8',
+    'langgraph>=0.2.0',  # Multi-agent orchestration (archived)
+    'langsmith>=0.2.0',  # Agent monitoring (archived)
+    'evidently>=0.5.8',  # Drift detection (archived)
 ]
 
 # Complete installation with all features

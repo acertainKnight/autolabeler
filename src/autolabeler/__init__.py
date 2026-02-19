@@ -1,62 +1,63 @@
 """
-AutoLabeler: Advanced AI-Powered Data Labeling System
+AutoLabeler: Unified Data Labeling Automation Service
 
-A sophisticated data labeling system that leverages Large Language Models (LLMs)
-with Retrieval-Augmented Generation (RAG), ensemble learning, and synthetic data
-generation to automatically label text datasets with high accuracy and explainability.
+A modern data labeling service using evidence-based LLM jury pipelines with
+heterogeneous models, confidence calibration, and structured markdown prompts.
 """
 
 __version__ = "2.0.0"
 
-# Main interface
-from .autolabeler_v2 import AutoLabelerV2 as AutoLabeler
-
-# Core services and configs for advanced usage
-from .core import (
-    LabelingService,
-    DataSplitService,
-    EvaluationService,
-    SyntheticGenerationService,
-    RuleGenerationService,
-    EnsembleService,
-    KnowledgeStore,
-    PromptManager,
-    LabelingConfig,
-    BatchConfig,
-    GenerationConfig,
-    EvaluationConfig,
-    RuleGenerationConfig,
-    EnsembleConfig,
-    ModelConfig,
+# New unified pipeline
+from .core.labeling import LabelingPipeline, LabelResult
+from .core.dataset_config import DatasetConfig, ModelConfig
+from .core.prompts import PromptRegistry
+from .core.quality import ConfidenceScorer
+from .core.llm_providers import (
+    LLMProvider,
+    LLMResponse,
+    OpenAIProvider,
+    AnthropicProvider,
+    GoogleProvider,
+    OpenRouterProvider,
+    get_provider,
 )
 
-# Foundational settings
-from .config import Settings
+# Evaluation and quality monitoring
+from .core.evaluation import EvaluationService
+from .core.quality import QualityMonitor, ConfidenceCalibrator
 
-# Data models
-from .models import LabelResponse
+# DSPy optimization
+from .core.optimization import DSPyOptimizer, DSPyConfig, DSPyOptimizationResult
+
+# Utilities
+from .core.utils import evaluation_utils, data_utils
 
 __all__ = [
-    # Main interface
-    "AutoLabeler",
-    "Settings",
-    # Core services
-    "LabelingService",
-    "DataSplitService",
-    "EvaluationService",
-    "SyntheticGenerationService",
-    "RuleGenerationService",
-    "EnsembleService",
-    "KnowledgeStore",
-    "PromptManager",
-    # Configuration
-    "LabelingConfig",
-    "BatchConfig",
-    "GenerationConfig",
-    "EvaluationConfig",
-    "RuleGenerationConfig",
-    "EnsembleConfig",
+    # Main pipeline
+    "LabelingPipeline",
+    "LabelResult",
+    "DatasetConfig",
     "ModelConfig",
-    # Data models
-    "LabelResponse",
+    "PromptRegistry",
+    # LLM providers
+    "LLMProvider",
+    "LLMResponse",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "GoogleProvider",
+    "OpenRouterProvider",
+    "get_provider",
+    # Quality & confidence
+    "ConfidenceScorer",
+    "QualityMonitor",
+    "ConfidenceCalibrator",
+    # Evaluation
+    "EvaluationService",
+    # DSPy optimization
+    "DSPyOptimizer",
+    "DSPyConfig",
+    "DSPyOptimizationResult",
+    # Utilities
+    "evaluation_utils",
+    "data_utils",
 ]

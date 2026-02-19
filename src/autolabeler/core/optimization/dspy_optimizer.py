@@ -154,17 +154,32 @@ class DSPyOptimizer:
 
         self.config = config
 
-        # Initialize DSPy language model
-        lm_kwargs = {'model': config.model_name}
+        # Initialize DSPy language model using modern dspy.LM API
+        # Note: DSPy 3.x replaced dspy.OpenAI with dspy.LM
+
+        # Add provider prefix if not present (for OpenAI compatibility)
+        model_name = config.model_name
+        if config.api_base and 'openrouter.ai' in config.api_base:
+            # OpenRouter: prepend "openrouter/" to tell litellm to use OpenRouter
+            lm_kwargs = {'model': f'openrouter/{model_name}'}
+        elif '/' not in model_name:
+            # OpenAI: add "openai/" prefix if no provider specified
+            lm_kwargs = {'model': f'openai/{model_name}'}
+        else:
+            # Model has provider prefix, use as-is
+            lm_kwargs = {'model': model_name}
+
         if config.api_key:
             lm_kwargs['api_key'] = config.api_key
         if config.api_base:
             lm_kwargs['api_base'] = config.api_base
 
-        self.lm = dspy.OpenAI(**lm_kwargs)
-        dspy.settings.configure(lm=self.lm)
+        self.lm = dspy.LM(**lm_kwargs)
+        dspy.configure(lm=self.lm)
 
-        logger.info(f'Initialized DSPy optimizer with model: {config.model_name}')
+        logger.info(f'Initialized DSPy optimizer with model: {model_name}')
+        if config.api_base:
+            logger.info(f'  Using API base: {config.api_base}')
 
     def optimize_labeling_prompt(
         self,
@@ -213,8 +228,10 @@ class DSPyOptimizer:
         module = LabelingModule()
 
         # Initialize MIPROv2 optimizer
+        # Set auto=None to use manual num_candidates and num_trials settings
         optimizer = MIPROv2(
             metric=metric_fn,
+            auto=None,  # Disable auto mode to allow manual configuration
             num_candidates=self.config.num_candidates,
             init_temperature=self.config.init_temperature,
         )

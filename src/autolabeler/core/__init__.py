@@ -1,63 +1,70 @@
 """
-Core components for AutoLabeler.
+Core components for AutoLabeler unified pipeline.
 
-This module provides the foundational services and utilities for the
-AutoLabeler system, organized into specialized submodules.
+This module provides the foundational services for the new evidence-based
+labeling pipeline with heterogeneous jury voting and confidence calibration.
 """
 
-# Base components
-from .base import ConfigurableComponent, ProgressTracker, BatchProcessor
+# Dataset configuration
+from .dataset_config import DatasetConfig, ModelConfig
 
-# Configuration classes
-from .configs import (
-    LabelingConfig,
-    BatchConfig,
-    GenerationConfig,
-    EvaluationConfig,
-    RuleGenerationConfig,
-    EnsembleConfig,
-    PromptConfig,
-    KnowledgeBaseConfig,
-    DataSplitConfig,
-    ComponentConfig
+# Prompt management
+from .prompts import PromptRegistry
+
+# LLM providers
+from .llm_providers import (
+    LLMProvider,
+    LLMResponse,
+    OpenAIProvider,
+    AnthropicProvider,
+    GoogleProvider,
+    OpenRouterProvider,
+    get_provider,
 )
 
-# Services
-from .labeling import LabelingService
-from .data import DataSplitService
+# Labeling pipeline
+from .labeling import LabelingPipeline, LabelResult
+
+# Quality & confidence
+from .quality import ConfidenceScorer, QualityMonitor, ConfidenceCalibrator
+
+# Evaluation
 from .evaluation import EvaluationService
-from .generation import SyntheticGenerationService
-from .rules import RuleGenerationService
-from .ensemble import EnsembleService, ModelConfig, EnsembleResult
-from .knowledge import KnowledgeStore, PromptManager, PromptRecord
+
+# Optimization
+from .optimization import DSPyOptimizer, DSPyConfig, DSPyOptimizationResult
+
+# Utilities
+from .utils import evaluation_utils, data_utils
 
 __all__ = [
-    # Base
-    "ConfigurableComponent",
-    "ProgressTracker",
-    "BatchProcessor",
-    # Configs
-    "LabelingConfig",
-    "BatchConfig",
-    "GenerationConfig",
-    "EvaluationConfig",
-    "RuleGenerationConfig",
-    "EnsembleConfig",
-    "PromptConfig",
-    "KnowledgeBaseConfig",
-    "DataSplitConfig",
-    "ComponentConfig",
-    # Services
-    "LabelingService",
-    "DataSplitService",
-    "EvaluationService",
-    "SyntheticGenerationService",
-    "RuleGenerationService",
-    "EnsembleService",
+    # Configuration
+    "DatasetConfig",
     "ModelConfig",
-    "EnsembleResult",
-    # Knowledge
-    "KnowledgeStore",
-    "PromptManager",
-    "PromptRecord"
+    # Prompts
+    "PromptRegistry",
+    # LLM providers
+    "LLMProvider",
+    "LLMResponse",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "GoogleProvider",
+    "OpenRouterProvider",
+    "get_provider",
+    # Labeling
+    "LabelingPipeline",
+    "LabelResult",
+    # Quality & confidence
+    "ConfidenceScorer",
+    "QualityMonitor",
+    "ConfidenceCalibrator",
+    # Evaluation
+    "EvaluationService",
+    # Optimization
+    "DSPyOptimizer",
+    "DSPyConfig",
+    "DSPyOptimizationResult",
+    # Utilities
+    "evaluation_utils",
+    "data_utils",
 ]

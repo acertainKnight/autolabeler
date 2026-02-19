@@ -1,207 +1,250 @@
-# AutoLabeler Quick Start Guide
+# Unified Labeling Pipeline - Quick Start Guide
 
-Get up and running with AutoLabeler in 5 minutes!
+## Overview
 
-## 1. Installation
+The autolabeler now uses a **unified, dataset-agnostic pipeline** configured via YAML files. One pipeline handles all classification tasks (FedSpeak, TPU, or any new dataset).
+
+## Evidence-Based Architecture
+
+Based on recent research:
+- **Heterogeneous Jury** (NeurIPS 2025, A-HMAD): Diverse models improve disagreement resolution
+- **Confidence-Weighted Voting** (Amazon 2024): Logprob-based confidence reduces ECE by 46%
+- **Candidate Annotation** (ACL 2025): Soft labels for ambiguous cases
+- **Tier System**: ACCEPT (unanimous) → ACCEPT-M (majority) → SOFT (ambiguous) → QUARANTINE (failed)
+
+## Quick Start
+
+### 1. Install Dependencies
 
 ```bash
-# Clone and install
-git clone https://github.com/yourusername/autolabeler.git
-cd autolabeler
-pip install -e .
+pip install -r requirements.txt
+# Or with optional dependencies:
+pip install -e ".[all]"
 ```
 
-## 2. Set Up API Keys
+### 2. Set API Keys
 
-Create a `.env` file:
-```env
-OPENROUTER_API_KEY=your_openrouter_key  # Get from https://openrouter.ai
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GOOGLE_API_KEY="..."
 ```
 
-## 3. Your First Labeling Task
+### 3. Run Labeling
 
-### Option A: Python Script
+#### Fed Headlines (6-class ordinal)
+
+```bash
+python scripts/run_labeling.py \
+    --dataset fed_headlines \
+    --input datasets/headlines.csv \
+    --output outputs/fed_headlines/labeled.csv \
+    --limit 100
+```
+
+#### TPU (binary classification)
+
+```bash
+python scripts/run_labeling.py \
+    --dataset tpu \
+    --input datasets/tpu_articles.csv \
+    --output outputs/tpu/labeled.csv \
+    --resume
+```
+
+### 4. Review Results
+
+Output CSV contains:
+- `label`: Primary label (most likely)
+- `label_type`: "hard" or "soft"
+- `tier`: ACCEPT, ACCEPT-M, SOFT, or QUARANTINE
+- `training_weight`: Weight for training (0-1)
+- `agreement`: Agreement type (unanimous, majority_adjacent, etc.)
+- `jury_labels`: Individual jury votes (JSON)
+- `jury_confidences`: Confidence scores (JSON)
+- `soft_label`: Soft label distribution for ambiguous cases (JSON)
+
+## Configuration
+
+### Dataset Config (YAML)
+
+Create `configs/{dataset}.yaml`:
+
+```yaml
+name: my_dataset
+labels: ["0", "1", "2"]
+text_column: text
+label_column: label
+batch_size: 10
+
+jury_models:
+  - name: gpt-4o-mini
+    provider: openai
+    model: gpt-4o-mini
+    has_logprobs: true
+    
+  - name: claude-3-5-haiku
+    provider: anthropic
+    model: claude-3-5-haiku-20241022
+    has_logprobs: false
+
+jury_temperature: 0.0
+use_relevancy_gate: false
+use_candidate_annotation: true
+candidate_temperature: 0.3
+```
+
+### Prompts (Markdown)
+
+Create `prompts/{dataset}/`:
+- `system.md` - System prompt (role, expertise, context)
+- `rules.md` - Classification rules and framework
+- `examples.md` - Calibration examples with reasoning
+- `mistakes.md` - Common mistakes to avoid
+- `candidate.md` - Candidate annotation prompt (optional)
+
+See `prompts/_template/` for templates.
+
+## Architecture
+
+### 5-Stage Pipeline
+
+1. **Optional Relevancy Gate** - Cheap pre-filter (not implemented in MVP)
+2. **Heterogeneous Jury** - Parallel calls to 3-6 diverse models
+3. **Confidence-Weighted Aggregation** - Logprobs or self-consistency
+4. **Optional Candidate Annotation** - Soft labels for disagreements
+5. **Tier Assignment** - ACCEPT/ACCEPT-M/SOFT/QUARANTINE
+
+### Key Components
 
 ```python
-from autolabeler import AutoLabeler, Settings
+from autolabeler.core.dataset_config import DatasetConfig
+from autolabeler.core.prompts.registry import PromptRegistry
+from autolabeler.core.labeling.pipeline import LabelingPipeline
+from autolabeler.core.quality.confidence_scorer import ConfidenceScorer
+
+# Load config and prompts
+config = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
+prompts = PromptRegistry("fed_headlines")
+
+# Initialize pipeline
+pipeline = LabelingPipeline(config, prompts)
+
+# Label one text
+result = await pipeline.label_one("FED SEES RATES RISING")
+print(result.label, result.tier)
+
+# Label dataframe
 import pandas as pd
-
-# Initialize
-settings = Settings()  # Reads from .env
-labeler = AutoLabeler("my_first_project", settings)
-
-# Add some training examples
-train_data = pd.DataFrame({
-    "text": [
-        "This product is amazing! Best purchase ever.",
-        "Terrible quality, complete waste of money.",
-        "It's okay, nothing special but does the job.",
-    ],
-    "label": ["positive", "negative", "neutral"]
-})
-labeler.add_training_data(train_data, "text", "label")
-
-# Label new data
-new_data = pd.DataFrame({
-    "text": [
-        "Fantastic service, highly recommend!",
-        "Disappointed with this purchase.",
-        "Average product, fair price.",
-    ]
-})
-
-# Get predictions
-results = labeler.label_dataframe(new_data, "text")
-print(results[["text", "predicted_label", "predicted_label_confidence"]])
+df = pd.read_csv("data.csv")
+results_df = await pipeline.label_dataframe(df, "output.csv")
 ```
 
-### Option B: Command Line
+## Command-Line Options
 
-1. Create a config file `config.json`:
-
-```json
-{
-  "project": {
-    "name": "sentiment_analysis",
-    "description": "Customer review sentiment"
-  },
-  "data": {
-    "input_file": "reviews.csv",
-    "text_column": "review",
-    "label_column": "sentiment"
-  },
-  "models": [{
-    "model_name": "meta-llama/llama-3.1-8b-instruct:free",
-    "temperature": 0.1,
-    "save_interval": 50,
-    "workers": 1
-  }]
-}
-```
-
-2. Prepare your data `reviews.csv`:
-```csv
-review,sentiment
-"Great product!",positive
-"Not worth it.",negative
-"It's fine.",neutral
-```
-
-3. Run labeling:
 ```bash
-python -m autolabeler.cli label \
-    --config config.json \
-    --input unlabeled_reviews.csv \
-    --output labeled_reviews.csv
+python scripts/run_labeling.py \
+    --dataset DATASET      # Dataset name (matches config file)
+    --input INPUT          # Input CSV file
+    --output OUTPUT        # Output CSV file
+    --resume               # Resume from existing output
+    --batch-size N         # Batch size (overrides config)
+    --limit N              # Limit to first N rows (for testing)
+    --max-budget AMOUNT    # Max budget in USD (TODO: implement)
+    --verbose              # Enable debug logging
 ```
 
-## 4. Using Batch Processing (Faster!)
+## Adding a New Dataset
 
-For larger datasets, use batch processing:
+1. **Create config**: `configs/my_dataset.yaml`
+2. **Create prompts**: `prompts/my_dataset/system.md`, `rules.md`, `examples.md`, `mistakes.md`
+3. **Run labeling**: `python scripts/run_labeling.py --dataset my_dataset ...`
 
-```python
-# Process 100 texts at a time with 5 concurrent API calls
-results = labeler.label_dataframe_batch(
-    large_df,
-    text_column="text",
-    batch_size=100,
-    max_concurrency=5
-)
+That's it! The unified pipeline handles everything else.
+
+## Tier Definitions
+
+- **ACCEPT** (weight=1.0): Unanimous jury agreement
+- **ACCEPT-M** (weight=0.85): Majority with adjacent disagreement
+- **SOFT** (weight=0.7): Ambiguous cases with soft labels
+- **QUARANTINE** (weight=0.0): Unresolved disagreements or failures
+
+## Confidence Scoring
+
+### Logprobs (OpenAI)
+- Extract P(label | text) directly from token probabilities
+- Most reliable, lowest ECE (~0.05-0.07)
+
+### Self-Consistency (Claude, Gemini)
+- Sample n times with higher temperature
+- Agreement rate = confidence
+- Reliable fallback
+
+### Verbal Fallback
+- Maps "high/medium/low" to 0.9/0.7/0.5
+- Known to be miscalibrated (ECE 0.13-0.43)
+
+### Calibration
+- Isotonic regression on held-out data
+- Improves reliability, reduces ECE by ~46%
+
+## Budget & Cost Tracking
+
+TODO: Integrate with existing cost tracking utilities in `src/autolabeler/core/utils/`.
+
+## Testing
+
+Run tests:
+
+```bash
+pytest tests/test_unified_pipeline.py -v
 ```
 
-## 5. Async for Maximum Speed
+## Migration from Old Scripts
 
-```python
-import asyncio
+Old scripts in `scripts/legacy/` (e.g., `run_tpu_multi_llm_voting.py`, `run_phase0_unified.py`) are preserved for reference but will be deprecated.
 
-async def label_fast():
-    results = await labeler.label_dataframe_batch_async(
-        huge_df,
-        text_column="text",
-        batch_size=200,
-        max_concurrency=10
-    )
-    return results
+Use the new unified entry point:
 
-# Run it
-labeled_df = asyncio.run(label_fast())
+```bash
+# Old way (deprecated)
+python run_tpu_multi_llm_voting.py --input data.csv --output out.csv
+
+# New way (recommended)
+python scripts/run_labeling.py --dataset tpu --input data.csv --output out.csv
 ```
 
-## 6. Generate Synthetic Data
+## Troubleshooting
 
-Balance your dataset automatically:
-
-```python
-from autolabeler import SyntheticDataGenerator
-
-generator = SyntheticDataGenerator(
-    "my_project",
-    settings,
-    knowledge_base=labeler.knowledge_base
-)
-
-# Generate equal examples for each label
-balanced = generator.balance_dataset("equal")
+### Missing API Keys
+Ensure all required API keys are set:
+```bash
+export OPENAI_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export GOOGLE_API_KEY="..."
 ```
 
-## 7. Extract Labeling Rules
-
-```python
-from autolabeler import RuleGenerator
-
-rule_gen = RuleGenerator("my_project", settings)
-
-# Generate rules from your labeled data
-result = rule_gen.generate_rules_from_data(
-    labeled_df,
-    text_column="text",
-    label_column="label"
-)
-
-# Export human-readable guidelines
-rule_gen.export_ruleset_for_humans(
-    result.ruleset,
-    Path("labeling_guidelines.md")
-)
+### Config Not Found
+Check that `configs/{dataset}.yaml` exists. List available configs:
+```bash
+ls configs/*.yaml
 ```
 
-## Common Use Cases
+### Prompts Not Loading
+Check that `prompts/{dataset}/` directory exists with required files:
+- system.md
+- rules.md
+- examples.md
+- mistakes.md
 
-### Customer Support Tickets
-```python
-labeler = AutoLabeler("support_tickets", settings)
-categories = ["billing", "technical", "feature_request", "bug_report"]
+### Import Errors
+Install dependencies:
+```bash
+pip install -e .
+# or
+pip install -r requirements.txt
 ```
 
-### Content Moderation
-```python
-labeler = AutoLabeler("content_moderation", settings)
-labels = ["safe", "needs_review", "inappropriate"]
-```
+## Support
 
-### Sentiment Analysis
-```python
-labeler = AutoLabeler("sentiment", settings)
-labels = ["positive", "negative", "neutral"]
-```
-
-## Tips for Best Results
-
-1. **Start with 10-20 examples per label** for initial training
-2. **Use low temperature (0.1-0.3)** for consistent labeling
-3. **Enable RAG** (on by default) for better accuracy
-4. **Review low-confidence predictions** (< 0.7)
-5. **Use batch processing** for datasets > 1000 items
-
-## Next Steps
-
-- Read the [full documentation](README.md)
-- Check out [example notebooks](examples/)
-- Join our [Discord community](https://discord.gg/autolabeler)
-
-## Need Help?
-
-- 📚 [Full Documentation](README.md)
-- 💬 [Discord Community](https://discord.gg/autolabeler)
-- 🐛 [Report Issues](https://github.com/yourusername/autolabeler/issues)
-- 📧 Email: support@autolabeler.com
+See main `README.md` for architecture details and research references.
