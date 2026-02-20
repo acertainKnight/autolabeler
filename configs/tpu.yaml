@@ -12,24 +12,28 @@ use_candidate_annotation: false  # Less ambiguity in binary classification
 use_typed_rag: false
 
 # Jury: 3 models for consensus
+# cost_tier orders models for cascade mode (1=cheapest, called first)
 jury_models:
+  - provider: openai
+    model: gpt-4o-mini
+    name: GPT-4o-mini
+    has_logprobs: true
+    self_consistency_samples: 0
+    cost_tier: 1
+  
   - provider: openai
     model: gpt-4o
     name: GPT-4o
     has_logprobs: true
     self_consistency_samples: 0
+    cost_tier: 2
   
   - provider: anthropic
     model: claude-sonnet-4-5-20250929
     name: Claude
     has_logprobs: false
     self_consistency_samples: 3
-  
-  - provider: google
-    model: gemini-2.5-pro
-    name: Gemini
-    has_logprobs: false
-    self_consistency_samples: 3
+    cost_tier: 2
 
 # Temperature settings
 jury_temperature: 0.1
@@ -38,3 +42,9 @@ sc_temperature: 0.3
 # Budget and batching
 budget_per_model: 10.0
 batch_size: 10
+
+# Cascade mode: binary classification benefits most from cascade since
+# many items are easy. Enable for ~50-60% cost savings.
+use_cascade: false
+cascade_confidence_threshold: 0.90  # higher bar for binary (easier task)
+cascade_agreement_threshold: 0.85

@@ -53,6 +53,7 @@ class LLMProvider(Protocol):
         user: str,
         temperature: float,
         logprobs: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> LLMResponse:
         """Call the LLM with a system and user prompt.
 
@@ -61,6 +62,7 @@ class LLMProvider(Protocol):
             user: User prompt with task and input
             temperature: Sampling temperature (0.0 = deterministic, 1.0 = creative)
             logprobs: Whether to request token logprobs (only OpenAI supports this)
+            response_schema: Optional JSON schema to constrain output format
 
         Returns:
             LLMResponse with text, parsed JSON, optional logprobs, and cost
@@ -218,20 +220,34 @@ class OpenAIProvider:
         user: str,
         temperature: float,
         logprobs: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> LLMResponse:
-        """Call OpenAI API."""
+        """Call OpenAI API with optional structured output."""
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
+            params: dict[str, Any] = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
-                temperature=temperature,
-                max_tokens=2048,
-                logprobs=logprobs,
-                top_logprobs=10 if logprobs else None,
-            )
+                "temperature": temperature,
+                "max_tokens": 2048,
+                "logprobs": logprobs,
+                "top_logprobs": 10 if logprobs else None,
+            }
+
+            # Add structured output if schema provided
+            if response_schema:
+                params["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "labeling_response",
+                        "strict": True,
+                        "schema": response_schema,
+                    }
+                }
+
+            response = await self.client.chat.completions.create(**params)
 
             text = response.choices[0].message.content or ""
             parsed = _parse_json(text)
@@ -311,10 +327,16 @@ class AnthropicProvider:
         user: str,
         temperature: float,
         logprobs: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> LLMResponse:
-        """Call Anthropic API."""
+        """Call Anthropic API with optional structured output via enhanced prompt."""
         if logprobs:
             logger.warning("Anthropic does not support logprobs. Ignoring logprobs parameter.")
+
+        # Enhance system prompt with schema if provided
+        if response_schema:
+            schema_str = json.dumps(response_schema, indent=2)
+            system = f"{system}\n\nYou MUST respond with valid JSON matching this exact schema:\n{schema_str}\n\nDo not include any text outside the JSON object."
 
         try:
             response = await self.client.messages.create(
@@ -378,19 +400,28 @@ class GoogleProvider:
         user: str,
         temperature: float,
         logprobs: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> LLMResponse:
-        """Call Google Generative AI API."""
+        """Call Google Generative AI API with optional structured output."""
         if logprobs:
             logger.warning("Google does not support logprobs. Ignoring logprobs parameter.")
 
         try:
             full_prompt = f"{system}\n\n{user}"
+            
+            generation_config: dict[str, Any] = {
+                "temperature": temperature,
+                "max_output_tokens": 2048,
+            }
+            
+            # Add structured output configuration if schema provided
+            if response_schema:
+                generation_config["response_mime_type"] = "application/json"
+                generation_config["response_schema"] = response_schema
+            
             response = await self.client.generate_content_async(
                 full_prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": 2048,
-                },
+                generation_config=generation_config,
             )
 
             text = response.text
@@ -480,6 +511,7 @@ class OpenRouterProvider:
         user: str,
         temperature: float,
         logprobs: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> LLMResponse:
         """Call OpenRouter API with rate limiting and cost tracking.
 
@@ -488,6 +520,7 @@ class OpenRouterProvider:
             user: User prompt.
             temperature: Sampling temperature.
             logprobs: Ignored (OpenRouter doesn't expose logprobs).
+            response_schema: Optional JSON schema to constrain output.
 
         Returns:
             LLMResponse with text, parsed JSON, and cost.
@@ -522,6 +555,17 @@ class OpenRouterProvider:
             # Ask OpenRouter to include usage data for cost calculation
             "usage": {"include": True},
         }
+        
+        # Add structured output if schema provided (OpenRouter forwards to upstream)
+        if response_schema:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "labeling_response",
+                    "strict": True,
+                    "schema": response_schema,
+                }
+            }
 
         await self.rate_limiter.acquire()
         try:

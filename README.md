@@ -1,213 +1,645 @@
-# Autolabeler: Unified Data Labeling Automation Service
+# Autolabeler
 
-A production-ready LLM-powered labeling service with heterogeneous jury voting, confidence calibration, and dataset-agnostic architecture.
-
-## What's New (v2.0 - February 2026)
-
-**Complete architectural rebuild** focused on:
-- ✅ **One pipeline, any dataset**: Configure via YAML, not code
-- ✅ **Heterogeneous jury voting**: Mix Anthropic, OpenAI, Google models for diversity
-- ✅ **Logprob-based confidence**: Extract true confidence from token probabilities (OpenAI)
-- ✅ **Structured prompts**: Rules, examples, and mistakes in readable markdown files
-- ✅ **Clean codebase**: Archived 8 experimental features, organized 33+ misplaced files
+A production-ready LLM-powered data labeling service. Heterogeneous jury voting, cascaded model escalation, confidence calibration, and dataset-agnostic architecture — all grounded in peer-reviewed research from 2024-2026.
 
 ## Quick Start
 
-### 1. Install
-
 ```bash
+# Install
 pip install -e .
-```
 
-### 2. Set API Keys
+# Option A: Use OpenRouter (one key for all models)
+export OPENROUTER_API_KEY="..."
 
-```bash
-export ANTHROPIC_API_KEY="your-key"
-export OPENAI_API_KEY="your-key"
-export GOOGLE_API_KEY="your-key"
-```
+# Option B: Use providers directly
+export OPENAI_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export GOOGLE_API_KEY="..."
 
-### 3. Label Data
-
-```bash
-# Fed headlines (6-class ordinal)
+# Label data
 python scripts/run_labeling.py \
     --dataset fed_headlines \
     --input datasets/fed_data.csv \
-    --output outputs/labeled.csv \
-    --budget 10.0
-
-# Trade Policy Uncertainty (binary)
-python scripts/run_labeling.py \
-    --dataset tpu \
-    --input datasets/articles.jsonl \
-    --output outputs/labeled.csv \
-    --budget 10.0
+    --output outputs/labeled.csv
 ```
 
-## Architecture
+---
 
+## System Overview
+
+Five scripts, one pipeline, any dataset:
+
+```mermaid
+graph LR
+    A[Your Data<br/>CSV / JSONL] --> B[run_labeling.py]
+    B --> C[Labeled Data<br/>+ soft labels]
+
+    C --> D[export_for_distillation.py]
+    D --> E[Distillation JSONL<br/>+ training weights]
+
+    C --> F[calibrate_jury.py]
+    F --> G[jury_weights.json]
+    G -.->|improves| B
+
+    C --> H[generate_programs.py]
+    H --> I[programs.json<br/>heuristic functions]
+    I -.->|cheap labels| A
+
+    J[Human Labels] --> K[optimize_prompts.py]
+    K --> L[Improved Prompts]
+    L -.->|improves| B
+
+    J --> D
+    J --> F
+
+    style B fill:#2563eb,color:#fff
+    style D fill:#059669,color:#fff
+    style F fill:#d97706,color:#fff
+    style H fill:#7c3aed,color:#fff
+    style K fill:#dc2626,color:#fff
 ```
-Input Data
-    ↓
-[Stage 1: Optional Relevancy Gate]
-    ↓
-[Stage 2: Heterogeneous Jury]
-  • Claude Sonnet 4.5
-  • GPT-4o (with logprobs)
-  • Gemini 2.5 Pro
-    ↓
-[Stage 3: Confidence-Weighted Vote]
-    ↓
-[Stage 4: Optional Candidate Annotation]
-  (for jury disagreements)
-    ↓
-[Stage 5: Tier Assignment]
-  • ACCEPT (unanimous, weight=1.0)
-  • ACCEPT-M (majority, weight=0.85)
-  • SOFT (soft labels, weight=0.7)
-  • QUARANTINE (unresolved, weight=0.0)
-    ↓
-Labeled Output
+
+| Script | Purpose | When to Use |
+|--------|---------|-------------|
+| `run_labeling.py` | Label data through multi-model jury pipeline | Always — this is the main entry point |
+| `optimize_prompts.py` | Improve prompts using DSPy + human labels | When you have ground-truth labels and want better accuracy |
+| `calibrate_jury.py` | Learn per-model, per-class reliability weights | After initial labeling, to improve aggregation |
+| `generate_programs.py` | Create cheap heuristic labeling functions | To scale up: label large unlabeled corpora cheaply |
+| `export_for_distillation.py` | Export with training weights + human mixing | To train a student model on the labeled data |
+
+---
+
+## Core Labeling Pipeline
+
+The pipeline has two modes: **full jury** (all models in parallel) and **cascade** (cheapest model first, escalate only when uncertain).
+
+### Full Jury Mode (default)
+
+```mermaid
+flowchart TD
+    Input["Input Text"] --> Gate
+
+    subgraph "Stage 1: Relevancy Gate (optional)"
+        Gate{Relevant?}
+        Gate -->|No| Irrelevant["Label: -99<br/>Tier: ACCEPT"]
+        Gate -->|Yes| Jury
+    end
+
+    subgraph "Stage 2: Heterogeneous Jury"
+        Jury["Call ALL jury models in parallel<br/><i>via direct API or OpenRouter</i>"]
+        Jury --> M1["Model 1<br/>(e.g. Gemini Flash)"]
+        Jury --> M2["Model 2<br/>(e.g. GPT-4o)"]
+        Jury --> M3["Model 3<br/>(e.g. Claude)"]
+    end
+
+    M1 --> Agg
+    M2 --> Agg
+    M3 --> Agg
+
+    subgraph "Stage 3: Confidence-Weighted Aggregation"
+        Agg["Collect votes + confidence scores"]
+        Agg --> Logprob["Logprob confidence<br/>(OpenAI models)"]
+        Agg --> Verbal["Numeric self-report<br/>(other models)"]
+        Logprob --> Cal["Calibrate via<br/>isotonic regression"]
+        Verbal --> Cal
+        Cal --> JW{"Jury weights<br/>available?"}
+        JW -->|Yes| ApplyW["Apply per-model<br/>per-class weights"]
+        JW -->|No| Vote
+        ApplyW --> Vote["Weighted majority vote<br/>+ soft label distribution"]
+    end
+
+    Vote --> Unanim{Unanimous?}
+
+    Unanim -->|Yes| Accept["ACCEPT<br/>weight=1.0"]
+    Unanim -->|No| MajAdj{Majority with<br/>adjacent disagreement?}
+
+    MajAdj -->|Yes| AcceptM["ACCEPT-M<br/>weight=0.85"]
+    MajAdj -->|No| Candidate
+
+    subgraph "Stage 4: Candidate Annotation (optional)"
+        Candidate["Call candidate model<br/>for soft label distribution"]
+        Candidate --> CandConf{Candidate<br/>confident?}
+        CandConf -->|≥ 0.8| CandAccept["Update label<br/>from candidate"]
+        CandConf -->|< 0.8| CandSoft["Keep as<br/>soft label"]
+    end
+
+    CandAccept --> Verify
+    CandSoft --> Verify
+
+    subgraph "Stage 5: Cross-Verification (optional)"
+        Verify{"Low confidence<br/>or disagreement?"}
+        Verify -->|Yes| VerCall["Call verifier model<br/>(different family)"]
+        VerCall --> VerDecide{Override?}
+        VerDecide -->|Yes| VerOverride["Replace label"]
+        VerDecide -->|No| VerConfirm["Confirm label"]
+        Verify -->|No| SkipVer["Skip verification"]
+    end
+
+    VerOverride --> Tier
+    VerConfirm --> Tier
+    SkipVer --> Tier
+    Accept --> Output
+    AcceptM --> Output
+
+    subgraph "Stage 6: Tier Assignment"
+        Tier["Assign final tier"]
+        Tier --> TAccept["ACCEPT<br/>weight=1.0"]
+        Tier --> TSoft["SOFT<br/>weight=0.7"]
+        Tier --> TQuar["QUARANTINE<br/>weight=0.0"]
+    end
+
+    TAccept --> Output
+    TSoft --> Output
+    TQuar --> Output
+
+    Output["Output: label, tier,<br/>soft_label, confidence,<br/>training_weight"]
+
+    style Accept fill:#16a34a,color:#fff
+    style AcceptM fill:#65a30d,color:#fff
+    style TAccept fill:#16a34a,color:#fff
+    style TSoft fill:#eab308,color:#fff
+    style TQuar fill:#dc2626,color:#fff
+    style Irrelevant fill:#6b7280,color:#fff
 ```
 
-## Adding a New Dataset
+### Cascade Mode (`use_cascade: true`)
 
-1. **Create prompt files:**
+Saves 40-60% API cost by not calling expensive models on easy items.
+
+```mermaid
+flowchart TD
+    Input["Input Text"] --> T1
+
+    subgraph "Tier 1: Cheapest Model"
+        T1["Call cheapest model<br/>(e.g. Gemini Flash, GPT-4o-mini)"]
+        T1 --> C1["Compute calibrated confidence<br/>(logprobs if available)"]
+        C1 --> D1{"Confidence ≥ 0.85?"}
+    end
+
+    D1 -->|"Yes ✓"| EarlyAccept["ACCEPT (cascade_single)<br/>1 model called<br/>~67% cost saved"]
+
+    D1 -->|"No"| T2
+
+    subgraph "Tier 2: Mid-Cost Models"
+        T2["Call next tier in parallel<br/>(e.g. GPT-4o + Claude)"]
+        T2 --> C2["Compute calibrated confidence"]
+        C2 --> D2{"All models agree<br/>with avg confidence ≥ 0.80?"}
+    end
+
+    D2 -->|"Yes ✓"| MidAccept["ACCEPT<br/>2-3 models called<br/>~33% cost saved"]
+
+    D2 -->|"No — disagreement"| FullJury["Proceed to full<br/>aggregation with<br/>all results collected"]
+
+    FullJury --> Agg["Standard Stages 3-6<br/>(aggregation, candidate,<br/>verification, tier)"]
+
+    Agg --> Output["Output"]
+
+    style EarlyAccept fill:#16a34a,color:#fff
+    style MidAccept fill:#65a30d,color:#fff
+    style FullJury fill:#eab308,color:#fff
+```
+
+**How cost_tier works:**
+```
+cost_tier: 1  →  Called first (cheapest: Gemini Flash, GPT-4o-mini)
+cost_tier: 2  →  Called only if tier 1 is uncertain (GPT-4o, Claude)
+cost_tier: 3  →  Called only if tiers 1+2 disagree (expensive models)
+```
+
+---
+
+## Confidence Scoring
+
+The cascade and aggregation decisions depend on confidence. Here's where it comes from, ranked by reliability:
+
+```mermaid
+flowchart LR
+    subgraph "Source (per model)"
+        LP["Token Logprobs<br/><i>P(label|text)</i><br/>OpenAI only"]
+        SC["Self-Consistency<br/><i>agreement over N samples</i><br/>Claude, Gemini"]
+        VB["Numeric Self-Report<br/><i>0.0 - 1.0</i><br/>fallback"]
+    end
+
+    LP -->|best| Raw["Raw Confidence"]
+    SC -->|good| Raw
+    VB -->|worst| Raw
+
+    Raw --> Isotonic["Isotonic Regression<br/>Calibration"]
+    Isotonic --> JuryW["Jury Weight<br/>Adjustment<br/>(if learned)"]
+    JuryW --> Final["Calibrated<br/>Confidence"]
+
+    Final -->|cascade gate| CG["Accept or<br/>Escalate?"]
+    Final -->|aggregation| WV["Weighted<br/>Vote"]
+    Final -->|output| SL["Soft Label<br/>Distribution"]
+
+    style LP fill:#16a34a,color:#fff
+    style SC fill:#65a30d,color:#fff
+    style VB fill:#eab308,color:#fff
+```
+
+| Source | ECE | When Available | Notes |
+|--------|-----|----------------|-------|
+| Logprobs | ~0.05 after calibration | OpenAI models (`has_logprobs: true`) | Best — actual model internals |
+| Self-consistency | ~0.10 | Any model (costs N extra calls) | Good — empirical agreement |
+| Numeric self-report | 0.13-0.43 | Always (structured output) | Worst — LLMs are overconfident |
+
+---
+
+## Prompt Optimization (DSPy)
+
+When you have human-labeled data, DSPy can automatically improve your prompts:
+
+```mermaid
+flowchart TD
+    HL["Human-Labeled Data<br/>(text + gold labels)"] --> Split["Train/Test Split"]
+    HP["Current Prompts<br/>(rules.md, examples.md)"] --> Base["Baseline Accuracy<br/>on test set"]
+
+    Split --> MIPROv2["DSPy MIPROv2 Optimizer"]
+    Base --> MIPROv2
+
+    MIPROv2 --> Trials["Run N trials<br/>(different prompt candidates)"]
+    Trials --> Eval["Evaluate each<br/>on test set"]
+    Eval --> Best["Select best<br/>prompt set"]
+
+    Best --> Report["Accuracy Report<br/>(baseline vs optimized)"]
+    Best --> NewPrompts["rules_dspy.md<br/>examples_dspy.md"]
+
+    NewPrompts -->|"human review"| Replace["Replace originals<br/>if better"]
+
+    style MIPROv2 fill:#dc2626,color:#fff
+```
+
 ```bash
-mkdir prompts/my_dataset
-# Create: system.md, rules.md, examples.md, mistakes.md
+python scripts/optimize_prompts.py \
+    --dataset fed_headlines \
+    --labeled-data datasets/human_labeled.csv \
+    --text-column headline \
+    --label-column label_hawk_dove \
+    --write-prompts
 ```
 
-2. **Create config:**
+---
+
+## Jury Weight Calibration
+
+After initial labeling, learn which models are reliable for which label classes:
+
+```mermaid
+flowchart TD
+    Cal["Calibration Data<br/>(model predictions + human labels)"] --> Fit["JuryWeightLearner.fit()"]
+
+    Fit --> PerModel["Per-model accuracy<br/>per label class"]
+    PerModel --> Weights["jury_weights.json"]
+
+    Weights --> Example["Example weights:<br/>GPT-4o on class '0': 0.92<br/>GPT-4o on class '1': 0.88<br/>Claude on class '0': 0.85<br/>Claude on class '1': 0.91"]
+
+    Weights -->|"config: jury_weights_path"| Pipeline["Pipeline uses weights<br/>in aggregation"]
+
+    style Fit fill:#d97706,color:#fff
+```
+
+```bash
+python scripts/calibrate_jury.py \
+    --dataset fed_headlines \
+    --calibration-data datasets/human_labeled.csv \
+    --model-columns gpt4_label claude_label gemini_label \
+    --true-label-column human_label \
+    --output outputs/fed_headlines/jury_weights.json
+```
+
+---
+
+## ALCHEmist Program Generation
+
+Generate cheap Python heuristic functions from high-confidence labels:
+
+```mermaid
+flowchart TD
+    Seed["High-Confidence Labels<br/>(ACCEPT tier, conf ≥ 0.7)"] --> Gen["ProgramGenerator<br/>(few-shot LLM prompt)"]
+
+    Gen --> Programs["15 candidate Python functions<br/><code>def label_fn(text) -> str</code>"]
+
+    Programs --> Eval["Evaluate on seed data"]
+    Eval --> Filter{"precision ≥ 0.8<br/>coverage ≥ 0.1?"}
+
+    Filter -->|Keep| Good["Validated Programs<br/>(typically 3-8 kept)"]
+    Filter -->|Reject| Bad["Discarded"]
+
+    Good --> Apply["Apply to unlabeled data"]
+    Apply --> Labeled["Program-labeled data<br/>+ confidence from agreement"]
+
+    Labeled --> Supplement["Use as supplement<br/>to jury labels"]
+
+    style Gen fill:#7c3aed,color:#fff
+    style Good fill:#16a34a,color:#fff
+    style Bad fill:#dc2626,color:#fff
+```
+
+```bash
+# Generate
+python scripts/generate_programs.py \
+    --config configs/fed_headlines.yaml \
+    --seed-data outputs/fed_headlines/labeled.csv \
+    --output outputs/fed_headlines/programs.json
+
+# Apply to new data
+python scripts/generate_programs.py \
+    --config configs/fed_headlines.yaml \
+    --load-programs outputs/fed_headlines/programs.json \
+    --apply-to datasets/unlabeled.csv \
+    --output outputs/fed_headlines/program_labeled.csv
+```
+
+---
+
+## Distillation Export
+
+Export labeled data optimized for training a student model:
+
+```mermaid
+flowchart TD
+    LLM["LLM-Labeled Data<br/>(from run_labeling.py)"] --> Export["DistillationExporter"]
+    Human["Human Labels<br/>(optional)"] --> Export
+
+    Export --> Weights["Apply training weights by tier"]
+    Weights --> W1["ACCEPT verified: 1.0"]
+    Weights --> W2["ACCEPT unverified: 0.9"]
+    Weights --> W3["ACCEPT-M: 0.7"]
+    Weights --> W4["SOFT: 0.5"]
+    Weights --> W5["QUARANTINE: excluded"]
+    Weights --> W6["Human: 1.2 (oversampled 3x)"]
+
+    W1 --> JSONL
+    W2 --> JSONL
+    W3 --> JSONL
+    W4 --> JSONL
+    W6 --> JSONL
+
+    JSONL["Output JSONL"]
+    JSONL --> Record["Each record:<br/>text, hard_label, soft_label,<br/>training_weight, source, tier"]
+
+    Record --> Student["Train Student Model<br/>(BERT, DistilBERT, etc.)"]
+
+    style Export fill:#059669,color:#fff
+    style W5 fill:#dc2626,color:#fff
+```
+
+```bash
+python scripts/export_for_distillation.py \
+    --llm-labels outputs/fed_headlines/labeled.csv \
+    --human-labels datasets/human_labeled.csv \
+    --human-text-column headline \
+    --human-label-column label \
+    --output outputs/fed_headlines/distillation.jsonl
+```
+
+---
+
+## Recommended Workflow
+
+The full end-to-end workflow for a new labeling project:
+
+```mermaid
+flowchart TD
+    Start["1. Create config and prompts"]
+    Label["2. Run labeling with cascade"]
+    Review["3. Review QUARANTINE items"]
+    HasHuman{"Have human labels?"}
+    MoreData["Get 100-200 human labels"]
+    Optimize["4a. Optimize prompts with DSPy"]
+    Calibrate["4b. Calibrate jury weights"]
+    Relabel["5. Re-label with improvements"]
+    Programs["6. Generate heuristic programs"]
+    Scale["7. Apply programs to full corpus"]
+    Export["8. Export for distillation"]
+    Train["9. Train student model"]
+
+    Start --> Label
+    Label --> Review
+    Review --> HasHuman
+    HasHuman -->|No| MoreData
+    MoreData --> HasHuman
+    HasHuman -->|Yes| Optimize
+    HasHuman -->|Yes| Calibrate
+    Optimize --> Relabel
+    Calibrate --> Relabel
+    Relabel --> Programs
+    Programs --> Scale
+    Scale --> Export
+    Export --> Train
+
+    style Start fill:#6b7280,color:#fff
+    style Label fill:#2563eb,color:#fff
+    style Optimize fill:#dc2626,color:#fff
+    style Calibrate fill:#d97706,color:#fff
+    style Programs fill:#7c3aed,color:#fff
+    style Export fill:#059669,color:#fff
+    style Train fill:#0891b2,color:#fff
+```
+
+---
+
+## Configuration
+
+Each dataset is configured via a YAML file in `configs/`:
+
 ```yaml
 # configs/my_dataset.yaml
 name: my_dataset
 labels: ["0", "1", "2"]
 text_column: text
-input_format: csv
 
+# Pipeline stages (toggle on/off)
+use_relevancy_gate: false
+use_candidate_annotation: true
+use_cross_verification: false
+use_structured_output: true
+use_cascade: false
+
+# Jury models (ordered by cost_tier for cascade)
 jury_models:
+  - provider: google
+    model: gemini-2.5-flash
+    name: Gemini-Flash
+    cost_tier: 1            # cheapest, called first in cascade
   - provider: openai
     model: gpt-4o
     name: GPT-4o
     has_logprobs: true
+    cost_tier: 2
   - provider: anthropic
     model: claude-sonnet-4-5-20250929
     name: Claude
+    cost_tier: 2
+
+# Cascade thresholds
+cascade_confidence_threshold: 0.85  # single model accept
+cascade_agreement_threshold: 0.80   # two model accept
+
+# Verification (Stage 5)
+verification_model:
+  provider: google
+  model: gemini-2.5-pro
+  name: Verifier
+verification_threshold: 0.6
+
+# Resource limits
+budget_per_model: 10.0
+batch_size: 10
 ```
 
-3. **Run:**
-```bash
-python scripts/run_labeling.py --dataset my_dataset --input data.csv --output labeled.csv
+### Using OpenRouter (Recommended for Simplicity)
+
+[OpenRouter](https://openrouter.ai/) gives you access to models from OpenAI, Anthropic, Google, Meta, Mistral, and others through a single API key. Set `provider: openrouter` and use the OpenRouter model identifier:
+
+```yaml
+jury_models:
+  - provider: openrouter
+    model: google/gemini-2.5-flash
+    name: Gemini-Flash
+    cost_tier: 1
+  - provider: openrouter
+    model: openai/gpt-4o
+    name: GPT-4o
+    cost_tier: 2
+  - provider: openrouter
+    model: anthropic/claude-sonnet-4
+    name: Claude
+    cost_tier: 2
+
+# Only need one API key
+# export OPENROUTER_API_KEY="..."
 ```
 
-## Key Features
+The OpenRouter provider includes built-in rate limiting, cost tracking, and budget enforcement. You can also mix providers — e.g., use OpenAI directly (for logprobs) and OpenRouter for the rest:
 
-### Heterogeneous Jury
-- Mix models from different providers for genuine diversity
-- Different training data = different error patterns = better ensemble
-- Confidence-weighted voting (not simple majority)
-
-### Advanced Confidence Scoring
-- **Logprob extraction** (OpenAI): Extract P(label | text) from token probabilities
-- **Self-consistency** (Claude, Gemini): Sample n times, measure agreement
-- **Isotonic calibration**: Post-hoc calibration for reliable confidence scores
-
-### Structured Prompts
-Prompts are **markdown files**, not JSON arrays:
-- Easy to read and edit
-- Easy to diff in PRs
-- Easy for domain experts (not just engineers) to review
-- Version-controlled alongside code
-
-Example structure:
-```
-prompts/fed_headlines/
-  ├── system.md       # Domain expertise, role definition
-  ├── rules.md        # 10-rule classification framework
-  ├── examples.md     # 50+ calibration examples with reasoning
-  ├── mistakes.md     # Common errors to avoid
-  └── candidate.md    # Prompt for disagreement resolution
+```yaml
+jury_models:
+  - provider: openrouter
+    model: google/gemini-2.5-flash
+    name: Gemini-Flash
+    cost_tier: 1
+  - provider: openai          # direct for logprobs
+    model: gpt-4o
+    name: GPT-4o
+    has_logprobs: true
+    cost_tier: 2
+  - provider: openrouter
+    model: anthropic/claude-sonnet-4
+    name: Claude
+    cost_tier: 2
 ```
 
-### Resume and Checkpointing
-- `--resume`: Resume from existing output, label only missing rows
-- `--resume-until-complete`: Loop until all rows have labels
-- Checkpoint after each batch (default: 10 rows)
-- Safe budget enforcement per model
+Prompts live in `prompts/{dataset_name}/`:
 
-## Datasets
+```
+prompts/my_dataset/
+├── system.md          # Role and domain expertise
+├── rules.md           # Classification decision framework
+├── examples.md        # Calibration examples with reasoning
+├── mistakes.md        # Common errors to avoid
+├── candidate.md       # Disagreement resolution prompt
+├── verify.md          # Cross-verification prompt
+└── program_gen.md     # ALCHEmist program generation prompt
+```
 
-### Fed Headlines (Monetary Policy Classification)
-- **Task**: Classify Federal Reserve headlines on hawk-dove spectrum
-- **Labels**: -2 (explicitly dovish) to +2 (explicitly hawkish), 0 (neutral), -99 (not relevant)
-- **Challenges**: ~45-55% should be neutral, adjacent-class ambiguity (0 vs 1, -1 vs 0)
-- **Pipeline**: All stages enabled (relevancy gate, jury, candidate annotation)
+### Supported Providers
 
-### Trade Policy Uncertainty (TPU)
-- **Task**: Detect uncertainty about trade policy in news articles
-- **Labels**: 0 (no TPU), 1 (TPU present)
-- **Challenges**: Must identify causal link between trade policy and uncertainty
-- **Pipeline**: Jury + aggregation only (simpler for binary task)
+| Provider | Config name | API Key Env Var | Logprobs | Notes |
+|----------|-------------|-----------------|----------|-------|
+| **OpenAI** | `openai` | `OPENAI_API_KEY` | Yes | Best for logprob-based confidence |
+| **Anthropic** | `anthropic` | `ANTHROPIC_API_KEY` | No | Use self-consistency for confidence |
+| **Google** | `google` | `GOOGLE_API_KEY` | No | Use self-consistency for confidence |
+| **OpenRouter** | `openrouter` | `OPENROUTER_API_KEY` | No | Access 200+ models with one key. Built-in rate limiting and cost tracking. Model names use `provider/model` format (e.g. `google/gemini-2.5-flash`) |
+
+You can mix providers freely within a jury. OpenRouter is the easiest way to get started — one API key gets you access to models from every provider.
+
+---
+
+## Adding a New Dataset
+
+1. Create `configs/my_dataset.yaml` (copy from an existing config)
+2. Create `prompts/my_dataset/` with at least `system.md` and `rules.md`
+3. Run: `python scripts/run_labeling.py --dataset my_dataset --input data.csv --output labeled.csv`
+
+---
 
 ## Project Structure
 
 ```
 autolabeler/
-├── configs/              # Dataset YAML configs
+├── configs/                    # Dataset YAML configs
 │   ├── fed_headlines.yaml
 │   └── tpu.yaml
-├── prompts/              # Structured prompt files
+├── prompts/                    # Structured prompt files (markdown)
 │   ├── fed_headlines/
 │   └── tpu/
-├── src/autolabeler/
-│   └── core/
-│       ├── prompts/         # PromptRegistry
-│       ├── llm_providers/   # Multi-provider abstraction
-│       ├── labeling/        # LabelingPipeline
-│       ├── quality/         # ConfidenceScorer, Calibrator
-│       └── dataset_config.py
 ├── scripts/
-│   ├── run_labeling.py      # Main entry point
-│   └── legacy/              # Old scripts (reference)
+│   ├── run_labeling.py         # Main labeling entry point
+│   ├── optimize_prompts.py     # DSPy prompt optimization
+│   ├── calibrate_jury.py       # Learn jury weights
+│   ├── generate_programs.py    # ALCHEmist program generation
+│   └── export_for_distillation.py  # Distillation export
+├── src/autolabeler/core/
+│   ├── labeling/
+│   │   ├── pipeline.py         # LabelingPipeline (main)
+│   │   ├── cascade.py          # CascadeStrategy
+│   │   ├── verification.py     # CrossVerifier
+│   │   └── program_generation.py  # ProgramGenerator/Labeler
+│   ├── llm_providers/
+│   │   └── providers.py        # 4 providers: OpenAI, Anthropic, Google, OpenRouter
+│   ├── quality/
+│   │   ├── confidence_scorer.py  # Logprobs, self-consistency, verbal
+│   │   ├── calibrator.py       # Isotonic regression calibration
+│   │   └── jury_weighting.py   # Per-model per-class weights
+│   ├── export/
+│   │   └── distillation_export.py
+│   ├── optimization/
+│   │   └── dspy_optimizer.py   # DSPy MIPROv2 integration
+│   ├── prompts/
+│   │   └── registry.py         # PromptRegistry
+│   └── dataset_config.py       # DatasetConfig + ModelConfig
+├── datasets/                   # Input data (gitignored)
+├── outputs/                    # Results (gitignored)
 └── tests/
-
 ```
 
-## Development Status
+---
 
-**Completed:**
-- ✅ Repo cleanup (Phase 1)
-- ✅ Prompt/rules management (Phase 2)
-- ✅ LLM provider abstraction (Phase 3, partial)
-- ✅ Dataset configuration system
+## Datasets
 
-**In Progress:**
-- ⏳ ConfidenceScorer
-- ⏳ LabelingPipeline
-- ⏳ run_labeling.py entry point
+### Fed Headlines (Monetary Policy Sentiment)
+- **Labels**: -2 (very dovish) to +2 (very hawkish), 0 (neutral), -99 (irrelevant)
+- **Pipeline**: Full — relevancy gate, jury, candidate annotation
+- **Challenges**: ~45-55% should be neutral; adjacent-class ambiguity
 
-See [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) for details.
+### Trade Policy Uncertainty (TPU)
+- **Labels**: 0 (not TPU-relevant), 1 (TPU-relevant)
+- **Pipeline**: Simpler — jury + aggregation only (binary task)
+- **Cascade**: Particularly effective here — many items are obviously not TPU
 
-## Evidence Base (v4 Architecture)
+---
 
-This architecture is based on recent NLP research:
+## Evidence Base
 
-1. **No debate/adjudicator** (NeurIPS 2025): Multi-round debate offers no accuracy gains over simple majority voting
-2. **Heterogeneous models** (A-HMAD): Agent diversity (different training data) yields 4-6% gains over same-model ensembles
-3. **Candidate annotation** (CanDist, ACL 2025): Soft labels for ambiguous cases outperform forced hard labels
-4. **Logprob confidence** (Amazon 2024): Token logprobs + calibration reduce ECE by ~46% vs verbal confidence
+All features are grounded in peer-reviewed research (2024-2026):
 
-Expected improvements for Fed Headlines:
-- Neutral rate: 31% → 45-55%
-- Dev accuracy: 74% → 83-88%
-- Train/dev gap: 17pts → <5pts
+| Feature | Evidence | Venue |
+|---------|----------|-------|
+| Heterogeneous jury | A-HMAD: 4-6% gain over same-model ensembles | 2024 |
+| No debate/adjudicator | Simple majority voting matches multi-round debate | NeurIPS 2025 |
+| Candidate soft labels | CanDist: soft labels outperform forced hard labels | ACL 2025 |
+| Logprob confidence | Calibrated logprobs reduce ECE by ~46% | Amazon 2024 |
+| Cross-verification | 58% improvement in Cohen's kappa | Nov 2025 |
+| Cascaded escalation | 80% human agreement at 80% coverage with cheap models | ICLR 2025 Oral |
+| Dynamic jury weights | Per-instance weighted aggregation improves consensus | ICLR 2026 |
+| Calibration | Normalization-aware isotonic regression for multi-class | 2024-2025 |
+| Program generation | ALCHEmist: 500x cheaper than LLM annotation | Oct 2024 |
+| Distillation export | ~7% gain training on properly weighted LLM labels | SiDyP 2025 |
+| Human label mixing | 125 human examples dramatically improve distilled models | Oct 2024 |
+
+---
 
 ## License
 
 MIT
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

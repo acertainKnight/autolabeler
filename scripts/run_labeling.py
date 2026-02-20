@@ -35,6 +35,7 @@ Evidence-Based Architecture:
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -130,6 +131,28 @@ async def run_labeling(args):
     )
     
     logger.info(f"Labeling complete! Results saved to {output_path}")
+    
+    # Also export soft labels to a separate JSONL file for distillation
+    jsonl_path = output_path.with_suffix('.jsonl')
+    with open(jsonl_path, 'w', encoding='utf-8') as f:
+        for _, row in results_df.iterrows():
+            record = {
+                "text": row[config.text_column],
+                "hard_label": row["label"],
+                "tier": row["tier"],
+                "training_weight": row["training_weight"],
+                "agreement": row["agreement"],
+            }
+            # Parse soft_label JSON
+            if pd.notna(row.get("soft_label")):
+                record["soft_label"] = json.loads(row["soft_label"])
+            else:
+                # Fallback: create one-hot distribution
+                record["soft_label"] = {row["label"]: 1.0}
+            
+            f.write(json.dumps(record) + '\n')
+    
+    logger.info(f"Soft labels exported to {jsonl_path}")
     
     # Summary statistics
     tier_counts = results_df['tier'].value_counts()

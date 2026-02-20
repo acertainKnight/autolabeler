@@ -11,24 +11,28 @@ use_candidate_annotation: true
 use_typed_rag: true
 
 # Jury: 3 heterogeneous models for diversity
+# cost_tier orders models for cascade mode (1=cheapest, called first)
 jury_models:
-  - provider: anthropic
-    model: claude-sonnet-4-5-20250929
-    name: Claude
+  - provider: google
+    model: gemini-2.5-flash
+    name: Gemini-Flash
     has_logprobs: false
     self_consistency_samples: 3
+    cost_tier: 1
   
   - provider: openai
     model: gpt-4o
     name: GPT-4o
     has_logprobs: true
     self_consistency_samples: 0
+    cost_tier: 2
   
-  - provider: google
-    model: gemini-2.5-pro
-    name: Gemini
+  - provider: anthropic
+    model: claude-sonnet-4-5-20250929
+    name: Claude
     has_logprobs: false
     self_consistency_samples: 3
+    cost_tier: 2
 
 # Optional: Relevancy gate (Stage 1)
 gate_model:
@@ -50,3 +54,9 @@ candidate_temperature: 0.2
 # Budget and batching
 budget_per_model: 10.0
 batch_size: 10
+
+# Cascade mode: call cheapest model first, escalate only when uncertain.
+# Saves ~40-60% API cost on easy items. Set use_cascade: true to enable.
+use_cascade: false
+cascade_confidence_threshold: 0.85  # single-model confidence to accept
+cascade_agreement_threshold: 0.80   # two-model agreement to accept

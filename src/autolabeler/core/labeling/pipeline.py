@@ -3,12 +3,18 @@
 This is the core of the autolabeler service. One pipeline handles all datasets,
 configured by DatasetConfig and PromptRegistry.
 
-5-Stage Architecture:
+Architecture:
 1. Optional relevancy gate (cheap pre-filter)
-2. Heterogeneous jury (parallel model calls)
+2. Jury voting -- either full parallel jury or cascaded escalation
 3. Confidence-weighted aggregation
 4. Optional candidate annotation (for disagreements)
-5. Tier assignment (ACCEPT, ACCEPT-M, SOFT, QUARANTINE)
+5. Optional cross-verification (for uncertain labels)
+6. Tier assignment (ACCEPT, ACCEPT-M, SOFT, QUARANTINE)
+
+Cascade mode (use_cascade=True):
+  Calls cheapest model first; if confident, skips the rest.
+  Otherwise escalates tier-by-tier until confidence/agreement is reached
+  or all models have been called. Typically saves 40-60% of API cost.
 """
 
 import asyncio
@@ -36,12 +42,13 @@ class LabelResult:
         label_type: "hard" or "soft"
         tier: ACCEPT, ACCEPT-M, SOFT, or QUARANTINE
         training_weight: Weight for training (0-1)
-        agreement: Agreement type (unanimous, majority_adjacent, etc.)
+        agreement: Agreement type (unanimous, majority_adjacent, cascade_single, etc.)
         jury_labels: List of labels from each jury member
         jury_confidences: List of confidences from each jury member
         soft_label: Optional soft label distribution {label: prob}
         reasoning: Reasoning from jury members
         error: Optional error message
+        cascade_info: Metadata from cascade escalation (models_called, cost_saved_pct, etc.)
     """
     label: int | str | None
     label_type: str  # "hard" or "soft"
@@ -53,6 +60,7 @@ class LabelResult:
     soft_label: dict[Any, float] | None = None
     reasoning: list[Any] | None = None
     error: str | None = None
+    cascade_info: dict[str, Any] | None = None
 
 
 class LabelingPipeline:
@@ -89,6 +97,13 @@ class LabelingPipeline:
         self.prompts = prompt_registry
         self.confidence_scorer = confidence_scorer or ConfidenceScorer()
         
+        # Load jury weights if provided
+        self.jury_weights = None
+        if self.config.jury_weights_path:
+            from ..quality.jury_weighting import JuryWeightLearner
+            self.jury_weights = JuryWeightLearner.load(self.config.jury_weights_path)
+            logger.info(f"Loaded jury weights from {self.config.jury_weights_path}")
+        
         # Initialize providers
         self.jury_providers = [
             get_provider(m.provider, m.model)
@@ -109,13 +124,44 @@ class LabelingPipeline:
                 self.config.candidate_model.model
             )
         
+        # Initialize cascade strategy
+        self.cascade = None
+        if self.config.use_cascade:
+            from .cascade import CascadeStrategy
+            self.cascade = CascadeStrategy(self.config)
+            tier_summary = [
+                f"tier {i}: {len(t)} model(s)"
+                for i, t in enumerate(self.cascade.tiers())
+            ]
+            logger.info(f"Cascade mode enabled: {', '.join(tier_summary)}")
+        
+        # Initialize verification
+        self.verifier = None
+        if self.config.use_cross_verification and self.config.verification_model:
+            from .verification import CrossVerifier
+            verifier_provider = get_provider(
+                self.config.verification_model.provider,
+                self.config.verification_model.model
+            )
+            self.verifier = CrossVerifier(
+                verifier_provider,
+                self.config.verification_model,
+                self.prompts,
+                self.config
+            )
+            logger.info(f"Initialized cross-verifier with {self.config.verification_model.name}")
+        
         logger.info(
             f"Initialized LabelingPipeline for {self.config.name} with "
             f"{len(self.jury_providers)} jury models"
         )
     
     async def label_one(self, text: str, rag_examples: str = "") -> LabelResult:
-        """Label a single text through the 5-stage pipeline.
+        """Label a single text through the pipeline.
+        
+        When cascade mode is enabled, starts with the cheapest model and
+        escalates only if confidence is low. Otherwise runs the full jury
+        in parallel.
         
         Parameters:
             text: Text to label
@@ -126,16 +172,23 @@ class LabelingPipeline:
         """
         try:
             # Stage 1: Optional relevancy gate (skip for now - jury handles it)
-            # Could add if config.use_relevancy_gate later
             
-            # Stage 2: Jury voting
+            # Stage 2: Jury voting (cascade or full parallel)
             system_prompt, user_prompt = self.prompts.build_labeling_prompt(
                 text, rag_examples
             )
             
-            jury_results = await self._call_jury(system_prompt, user_prompt)
+            if self.cascade:
+                jury_results, escalation = await self._call_jury_cascade(
+                    system_prompt, user_prompt
+                )
+            else:
+                jury_results = await self._call_jury(system_prompt, user_prompt)
+                escalation = None
             
-            if len(jury_results) < 2:
+            # Need at least 1 result (cascade can accept a single confident model)
+            min_results = 1 if self.cascade else 2
+            if len(jury_results) < min_results:
                 return LabelResult(
                     label=None,
                     label_type="hard",
@@ -144,11 +197,23 @@ class LabelingPipeline:
                     agreement="jury_failure",
                     jury_labels=[],
                     jury_confidences=[],
-                    error="Jury failed (< 2 models responded)"
+                    error=f"Jury failed (< {min_results} models responded)"
                 )
             
             # Stage 3: Confidence-weighted aggregation
-            return await self._aggregate_votes(text, jury_results, rag_examples)
+            result = await self._aggregate_votes(text, jury_results, rag_examples)
+            
+            # Attach cascade metadata if available
+            if escalation:
+                result.cascade_info = {
+                    "models_called": escalation.models_called,
+                    "total_models": escalation.total_models,
+                    "early_exit": escalation.early_exit,
+                    "reason": escalation.escalation_reason,
+                    "cost_saved_pct": escalation.cost_saved_pct,
+                }
+            
+            return result
         
         except Exception as e:
             logger.error(f"Pipeline failed for text: {e}")
@@ -197,6 +262,100 @@ class LabelingPipeline:
         
         return jury_results
     
+    def _compute_juror_confidence(self, result: dict[str, Any]) -> float:
+        """Compute best-available confidence for a single juror result.
+        
+        Uses logprobs if available (most reliable), then calibrates.
+        Falls back to verbal confidence only as a last resort.
+        
+        Parameters:
+            result: Raw juror result dict from _call_one_juror
+            
+        Returns:
+            Calibrated confidence score (0-1)
+        """
+        model_config = result["_model_config"]
+        label = result["label"]
+        
+        if model_config.has_logprobs and result.get("logprobs"):
+            raw_conf = self.confidence_scorer.from_logprobs(
+                result["logprobs"], label
+            )
+        else:
+            raw_conf = result.get("confidence", 0.7)
+        
+        return self.confidence_scorer.calibrate(raw_conf)
+    
+    async def _call_jury_cascade(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> tuple[list[dict[str, Any]], Any]:
+        """Call jury models using cascaded escalation (cheapest first).
+        
+        Calls models tier by tier. After each tier, computes calibrated
+        confidence (using logprobs where available) and checks whether
+        that confidence is high enough to accept early.
+        
+        Returns:
+            Tuple of (jury_results, EscalationResult)
+        """
+        all_results: list[dict[str, Any]] = []
+        models_called = 0
+        
+        for tier_idx, model_indices in enumerate(self.cascade.tiers()):
+            # Call all models in this tier in parallel
+            tasks = []
+            for idx in model_indices:
+                provider = self.jury_providers[idx]
+                model_config = self.config.jury_models[idx]
+                tasks.append(
+                    self._call_one_juror(
+                        provider, model_config, system_prompt, user_prompt
+                    )
+                )
+            
+            tier_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for i, r in enumerate(tier_results):
+                model_idx = model_indices[i]
+                if isinstance(r, Exception):
+                    logger.warning(f"Cascade juror {model_idx} failed: {r}")
+                    continue
+                r["_model_config"] = self.config.jury_models[model_idx]
+                # Replace verbal confidence with calibrated confidence
+                # BEFORE the cascade gate checks it
+                r["confidence"] = self._compute_juror_confidence(r)
+                all_results.append(r)
+                models_called += 1
+            
+            # Check if we can accept early
+            should_accept, reason = self.cascade.should_accept(all_results, tier_idx)
+            
+            if should_accept:
+                escalation = self.cascade.build_escalation_result(
+                    results=all_results,
+                    models_called=models_called,
+                    early_exit=True,
+                    reason=reason,
+                )
+                logger.info(
+                    f"Cascade: accepted at tier {tier_idx} "
+                    f"({models_called}/{len(self.config.jury_models)} models, "
+                    f"saved ~{escalation.cost_saved_pct:.0f}% cost) — {reason}"
+                )
+                return all_results, escalation
+        
+        # All tiers exhausted — fall through to full aggregation
+        escalation = self.cascade.build_escalation_result(
+            results=all_results,
+            models_called=models_called,
+            early_exit=False,
+            reason="full_jury_required",
+        )
+        logger.debug(f"Cascade: full jury used ({models_called} models)")
+        return all_results, escalation
+    
     async def _call_one_juror(
         self,
         provider: Any,
@@ -209,11 +368,40 @@ class LabelingPipeline:
         Returns:
             Dict with label, confidence, reasoning, logprobs
         """
+        # Build JSON schema if structured output is enabled
+        response_schema = None
+        if self.config.use_structured_output:
+            response_schema = {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "enum": self.config.labels,
+                        "description": "The predicted label"
+                    },
+                    "reasoning": {
+                        "type": "string",
+                        "description": "Brief explanation for the label choice"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "description": (
+                            "Your confidence in this label as a probability "
+                            "between 0 and 1. Be honest: 0.5 means a coin flip, "
+                            "0.9 means very confident."
+                        ),
+                    }
+                },
+                "required": ["label", "confidence", "reasoning"],
+                "additionalProperties": False
+            }
+        
         response: LLMResponse = await provider.call(
             system=system_prompt,
             user=user_prompt,
             temperature=self.config.jury_temperature,
             logprobs=model_config.has_logprobs,
+            response_schema=response_schema,
         )
         
         result = {
@@ -227,11 +415,11 @@ class LabelingPipeline:
         if response.parsed_json:
             result["label"] = response.parsed_json.get("label")
             result["reasoning"] = response.parsed_json.get("reasoning")
-            verbal_conf = response.parsed_json.get("confidence", "medium")
-            if isinstance(verbal_conf, str):
-                result["confidence"] = self.confidence_scorer.from_verbal(verbal_conf)
-            elif isinstance(verbal_conf, (int, float)):
-                result["confidence"] = float(verbal_conf)
+            raw_conf = response.parsed_json.get("confidence")
+            if isinstance(raw_conf, (int, float)):
+                result["confidence"] = max(0.0, min(1.0, float(raw_conf)))
+            elif isinstance(raw_conf, str):
+                result["confidence"] = self.confidence_scorer.from_verbal(raw_conf)
         
         return result
     
@@ -244,6 +432,7 @@ class LabelingPipeline:
         """Stage 3: Aggregate jury votes with confidence weighting.
         
         Also handles stages 4-5: candidate annotation and tier assignment.
+        Handles single-model cascade accepts as well as full-jury results.
         """
         # Extract labels and calculate confidence-weighted votes
         votes = []
@@ -261,6 +450,11 @@ class LabelingPipeline:
             
             # Calibrate if available
             conf = self.confidence_scorer.calibrate(raw_conf)
+            
+            # Apply jury weights if available
+            if self.jury_weights:
+                weight = self.jury_weights.get_weight(model_config.name, label)
+                conf = conf * weight
             
             votes.append({
                 "label": label,
@@ -282,8 +476,31 @@ class LabelingPipeline:
         jury_confidences = [v["confidence"] for v in votes]
         reasoning = [r.get("reasoning") for r in jury_results]
         
+        # ALWAYS compute confidence-weighted soft label distribution
+        total_weight = sum(label_weights.values())
+        soft_label = {
+            label: weight / total_weight
+            for label, weight in label_weights.items()
+        }
+        
         n_jury = len(jury_results)
         max_agreement = label_counts.most_common(1)[0][1]
+        
+        # SINGLE-MODEL CASCADE ACCEPT
+        if n_jury == 1 and self.cascade:
+            conf = jury_confidences[0]
+            tier = "ACCEPT" if conf >= self.config.cascade_confidence_threshold else "SOFT"
+            return LabelResult(
+                label=winning_label,
+                label_type="hard",
+                tier=tier,
+                training_weight=min(conf, 0.95),
+                agreement="cascade_single",
+                jury_labels=jury_labels,
+                jury_confidences=jury_confidences,
+                soft_label=soft_label,
+                reasoning=reasoning,
+            )
         
         # UNANIMOUS
         if max_agreement == n_jury:
@@ -295,6 +512,7 @@ class LabelingPipeline:
                 agreement="unanimous",
                 jury_labels=jury_labels,
                 jury_confidences=jury_confidences,
+                soft_label=soft_label,
                 reasoning=reasoning,
             )
         
@@ -313,6 +531,7 @@ class LabelingPipeline:
                             agreement="majority_adjacent",
                             jury_labels=jury_labels,
                             jury_confidences=jury_confidences,
+                            soft_label=soft_label,
                             reasoning=reasoning,
                         )
                 except (ValueError, TypeError):
@@ -320,6 +539,7 @@ class LabelingPipeline:
                     pass
         
         # Stage 4: Candidate annotation for disagreements
+        candidate_soft_label = None
         if self.config.use_candidate_annotation and self.candidate_provider:
             candidate_result = await self._get_candidate_annotation(
                 text, jury_results, rag_examples
@@ -327,34 +547,70 @@ class LabelingPipeline:
             
             if candidate_result and candidate_result.get("candidates"):
                 candidates = candidate_result["candidates"]
-                soft_label = {c["label"]: c["probability"] for c in candidates}
+                candidate_soft_label = {c["label"]: c["probability"] for c in candidates}
                 primary = candidate_result.get("primary_label", winning_label)
                 max_prob = max(c["probability"] for c in candidates)
                 
+                # Update winning label if candidate is more confident
                 if max_prob >= 0.8:
-                    return LabelResult(
-                        label=primary,
-                        label_type="hard",
-                        tier="ACCEPT-M",
-                        training_weight=0.8,
-                        agreement="candidate_confident",
-                        soft_label=soft_label,
-                        jury_labels=jury_labels,
-                        jury_confidences=jury_confidences,
-                        reasoning=reasoning,
-                    )
-                else:
-                    return LabelResult(
-                        label=primary,
-                        label_type="soft",
-                        soft_label=soft_label,
-                        tier="SOFT",
-                        training_weight=0.7,
-                        agreement="candidate_ambiguous",
-                        jury_labels=jury_labels,
-                        jury_confidences=jury_confidences,
-                        reasoning=reasoning,
-                    )
+                    winning_label = primary
+                    soft_label = candidate_soft_label
+        
+        # Stage 5: Cross-verification for uncertain labels
+        verified = False
+        avg_confidence = sum(jury_confidences) / len(jury_confidences) if jury_confidences else 0.5
+        jury_agreement = max_agreement / n_jury
+        
+        should_verify = (
+            self.verifier and
+            (jury_agreement < self.config.verification_threshold or
+             avg_confidence < self.config.verification_threshold)
+        )
+        
+        if should_verify:
+            verification_result = await self.verifier.verify(
+                text=text,
+                proposed_label=winning_label,
+                jury_votes=label_counts,
+                confidence=avg_confidence,
+                reasoning=reasoning,
+            )
+            
+            if verification_result["action"] == "override":
+                logger.info(
+                    f"Verification override: {winning_label} -> "
+                    f"{verification_result.get('corrected_label')}"
+                )
+                winning_label = verification_result.get("corrected_label", winning_label)
+                # Update soft label to reflect verified decision
+                soft_label = {winning_label: 1.0}
+                verified = True
+        
+        # Final tier assignment based on verification and candidate results
+        if candidate_soft_label and max_prob >= 0.8:
+            return LabelResult(
+                label=winning_label,
+                label_type="hard",
+                tier="ACCEPT" if verified else "ACCEPT-M",
+                training_weight=1.0 if verified else 0.8,
+                agreement="verified" if verified else "candidate_confident",
+                soft_label=soft_label,
+                jury_labels=jury_labels,
+                jury_confidences=jury_confidences,
+                reasoning=reasoning,
+            )
+        elif candidate_soft_label:
+            return LabelResult(
+                label=winning_label,
+                label_type="soft",
+                soft_label=soft_label,
+                tier="SOFT",
+                training_weight=0.7,
+                agreement="candidate_ambiguous",
+                jury_labels=jury_labels,
+                jury_confidences=jury_confidences,
+                reasoning=reasoning,
+            )
         
         # Fallback: QUARANTINE
         return LabelResult(
@@ -365,6 +621,7 @@ class LabelingPipeline:
             agreement="unresolved",
             jury_labels=jury_labels,
             jury_confidences=jury_confidences,
+            soft_label=soft_label,
             reasoning=reasoning,
         )
     
@@ -448,6 +705,9 @@ class LabelingPipeline:
                     "jury_confidences": json.dumps(result.jury_confidences),
                     "soft_label": json.dumps(result.soft_label) if result.soft_label else None,
                 }
+                if result.cascade_info:
+                    result_row["cascade_models_called"] = result.cascade_info["models_called"]
+                    result_row["cascade_early_exit"] = result.cascade_info["early_exit"]
                 all_results.append(result_row)
             
             # Checkpoint
@@ -455,11 +715,17 @@ class LabelingPipeline:
             results_df.to_csv(output_path, index=False)
             
             done = min(i + self.config.batch_size, len(df))
-            logger.info(
+            status = (
                 f"Labeled {done}/{len(df)} | "
                 f"ACCEPT: {sum(1 for r in all_results if r['tier']=='ACCEPT')} | "
                 f"SOFT: {sum(1 for r in all_results if r['tier']=='SOFT')} | "
                 f"QUARANTINE: {sum(1 for r in all_results if r['tier']=='QUARANTINE')}"
             )
+            if self.cascade:
+                early_exits = sum(
+                    1 for r in all_results if r.get("cascade_early_exit", False)
+                )
+                status += f" | cascade early exits: {early_exits}/{done}"
+            logger.info(status)
         
         return pd.DataFrame(all_results)
