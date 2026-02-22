@@ -5,19 +5,25 @@ This is the ONE script to run labeling for any dataset.
 Configured via YAML files in configs/{dataset}.yaml
 
 Usage:
-    # Fed Headlines with full pipeline
+    # Single CSV file
     python scripts/run_labeling.py \\
         --dataset fed_headlines \\
         --input datasets/headlines.csv \\
         --output outputs/fed_headlines/labeled.csv
-    
-    # TPU with simpler pipeline
+
+    # Directory of JSONL splits (all files processed together)
+    python scripts/run_labeling.py \\
+        --dataset fed_headlines \\
+        --input datasets/headlines/ \\
+        --output outputs/fed_headlines/labeled.csv
+
+    # Resume an interrupted run
     python scripts/run_labeling.py \\
         --dataset tpu \\
         --input datasets/tpu_articles.csv \\
         --output outputs/tpu/labeled.csv \\
         --resume
-    
+
     # With budget limit
     python scripts/run_labeling.py \\
         --dataset fed_headlines \\
@@ -51,6 +57,7 @@ from src.autolabeler.core.labeling.pipeline import LabelingPipeline
 from src.autolabeler.core.llm_providers.providers import load_provider_module
 from src.autolabeler.core.prompts.registry import PromptRegistry
 from src.autolabeler.core.quality.confidence_scorer import ConfidenceScorer
+from src.autolabeler.core.utils.data_utils import load_input_data
 
 
 def setup_logging(verbose: bool = False):
@@ -106,18 +113,20 @@ async def run_labeling(args):
         max_budget=args.max_budget or 0.0,
     )
     
-    # Load input data
+    # Load input data (single file or directory of files)
     input_path = Path(args.input)
     if not input_path.exists():
-        logger.error(f"Input file not found: {input_path}")
+        logger.error(f"Input path not found: {input_path}")
         return 1
-    
-    df = pd.read_csv(input_path)
-    logger.info(f"Loaded {len(df)} rows from {input_path}")
-    
-    if config.text_column not in df.columns:
-        logger.error(f"Text column '{config.text_column}' not found")
-        logger.error(f"Available columns: {df.columns.tolist()}")
+
+    try:
+        df = load_input_data(
+            input_path,
+            input_format=config.input_format,
+            text_column=config.text_column,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        logger.error(str(exc))
         return 1
     
     # Apply limits
@@ -210,7 +219,11 @@ def main():
     parser.add_argument(
         "--input",
         required=True,
-        help="Input CSV file path"
+        help=(
+            "Input file or directory. When a directory is given, all files "
+            "matching the config's input_format (csv/jsonl) are loaded and "
+            "concatenated."
+        ),
     )
     
     parser.add_argument(

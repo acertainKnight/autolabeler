@@ -752,6 +752,7 @@ class LabelingPipeline:
             for (idx, row), result in zip(batch_df.iterrows(), batch_results):
                 result_row = {
                     text_col: row[text_col],
+                    "_source_file": row.get("_source_file"),
                     "label": result.label,
                     "label_type": result.label_type,
                     "tier": result.tier,
