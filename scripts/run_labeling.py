@@ -48,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.autolabeler.core.dataset_config import DatasetConfig
 from src.autolabeler.core.labeling.pipeline import LabelingPipeline
+from src.autolabeler.core.llm_providers.providers import load_provider_module
 from src.autolabeler.core.prompts.registry import PromptRegistry
 from src.autolabeler.core.quality.confidence_scorer import ConfidenceScorer
 
@@ -68,7 +69,12 @@ def setup_logging(verbose: bool = False):
 
 async def run_labeling(args):
     """Run labeling pipeline."""
-    
+
+    # Load any custom provider modules before building the pipeline so that
+    # register_provider() calls within them are in effect when get_provider() runs.
+    for module_path in args.provider_module or []:
+        load_provider_module(module_path)
+
     # Load dataset configuration
     config_path = Path(f"configs/{args.dataset}.yaml")
     if not config_path.exists():
@@ -93,7 +99,12 @@ async def run_labeling(args):
     confidence_scorer = ConfidenceScorer()
     
     # Initialize pipeline
-    pipeline = LabelingPipeline(config, prompts, confidence_scorer)
+    pipeline = LabelingPipeline(
+        config,
+        prompts,
+        confidence_scorer,
+        max_budget=args.max_budget or 0.0,
+    )
     
     # Load input data
     input_path = Path(args.input)
@@ -114,12 +125,12 @@ async def run_labeling(args):
         df = df.head(args.limit)
         logger.info(f"Limited to first {args.limit} rows")
     
-    # Budget tracking (if needed)
-    # TODO: Integrate with cost tracking utilities
-    
     # Run labeling
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if args.max_budget:
+        logger.info(f"Budget ceiling set to ${args.max_budget:.2f}")
     
     logger.info("Starting labeling pipeline...")
     logger.info(f"Output will be saved to: {output_path}")
@@ -130,7 +141,13 @@ async def run_labeling(args):
         resume=args.resume,
     )
     
-    logger.info(f"Labeling complete! Results saved to {output_path}")
+    cost_info = f"${pipeline.cost_tracker.total_cost:.4f}"
+    if args.max_budget:
+        cost_info += f" of ${args.max_budget:.2f} budget"
+    logger.info(
+        f"Labeling complete! {len(results_df)} rows saved to {output_path} "
+        f"(total cost: {cost_info}, {pipeline.cost_tracker.call_count} API calls)"
+    )
     
     # Also export soft labels to a separate JSONL file for distillation
     jsonl_path = output_path.with_suffix('.jsonl')
@@ -226,6 +243,18 @@ def main():
         help="Maximum budget in USD (stops when reached)"
     )
     
+    parser.add_argument(
+        "--provider-module",
+        action="append",
+        metavar="MODULE",
+        help=(
+            "Dotted Python module path to import before running the pipeline "
+            "(e.g., my_company.llm_proxy). The module must call "
+            "register_provider() at import time. Can be repeated to load "
+            "multiple modules."
+        ),
+    )
+
     parser.add_argument(
         "--verbose",
         "-v",

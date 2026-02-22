@@ -1,0 +1,21 @@
+# NLI hypothesis strings for the fed_headlines labeling task.
+#
+# Each label maps to a natural-language hypothesis that should be entailed
+# by texts assigned to that label. Used by NLIScorer for model-independent
+# coherence verification.
+#
+# Label scale:
+#   -99 = irrelevant (no monetary policy signal)
+#   -2  = strongly dovish
+#   -1  = somewhat dovish
+#    0  = neutral
+#    1  = somewhat hawkish
+#    2  = strongly hawkish
+
+labels:
+  "-99": "This text does not contain any signal about monetary policy direction and is irrelevant to Federal Reserve policy stance."
+  "-2": "This text expresses a strongly dovish monetary policy stance, signalling significant interest rate cuts, aggressive easing, or deep concern about economic weakness."
+  "-1": "This text expresses a somewhat dovish monetary policy stance, hinting at rate cuts, easing bias, or concern about slowing growth."
+  "0": "This text is neutral regarding monetary policy direction, presenting balanced or ambiguous information without a clear hawkish or dovish lean."
+  "1": "This text expresses a somewhat hawkish monetary policy stance, suggesting rate hikes, tighter policy, or concern about inflation."
+  "2": "This text expresses a strongly hawkish monetary policy stance, signalling significant interest rate increases, aggressive tightening, or urgent concern about runaway inflation."

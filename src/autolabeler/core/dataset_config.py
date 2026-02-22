@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+from autolabeler.core.diagnostics.config import DiagnosticsConfig
+
 
 @dataclass
 class ModelConfig:
@@ -111,6 +113,12 @@ class DatasetConfig:
     jury_weights_path: str | None = None
     program_sample_size: int = 500
     program_confidence_threshold: float = 0.8
+
+    # Post-labeling diagnostics (optional)
+    diagnostics: DiagnosticsConfig | None = None
+
+    # LIT integration defaults (optional -- all values can be overridden via CLI)
+    lit_config: dict | None = None
     
     @classmethod
     def from_yaml(cls, path: str | Path) -> 'DatasetConfig':
@@ -179,6 +187,12 @@ class DatasetConfig:
             jury_weights_path=data.get('jury_weights_path'),
             program_sample_size=data.get('program_sample_size', 500),
             program_confidence_threshold=data.get('program_confidence_threshold', 0.8),
+            diagnostics=(
+                DiagnosticsConfig.from_dict(data['diagnostics'])
+                if data.get('diagnostics')
+                else None
+            ),
+            lit_config=data.get('lit') or None,
         )
     
     def to_yaml(self, path: str | Path) -> None:

@@ -60,3 +60,45 @@ batch_size: 10
 use_cascade: false
 cascade_confidence_threshold: 0.85  # single-model confidence to accept
 cascade_agreement_threshold: 0.80   # two-model agreement to accept
+
+# LIT integration defaults: used by scripts/run_lit.py when flags are omitted.
+# All values can be overridden via CLI arguments.
+lit:
+  embedding_layer: null          # e.g. "encoder.pooler" -- set once you know your model
+  enable_gradients: false        # set true to enable token saliency maps
+  enable_attention: false        # set true to expose attention head visualisation
+  port: 4321
+
+# Post-labeling diagnostics: detect errors without ground truth.
+# Set run_post_labeling: true to auto-run after label_dataframe().
+# Use scripts/run_diagnostics.py for standalone post-hoc analysis.
+diagnostics:
+  enabled: true
+  run_post_labeling: false  # set true to auto-run after labeling
+
+  # Embedding provider: "local" (sentence-transformers), "openai", or "openrouter"
+  embedding_provider: "local"
+  embedding_model: "all-MiniLM-L6-v2"
+  # embedding_api_key: null  # optional; falls back to env vars (OPENAI_API_KEY / OPENROUTER_API_KEY)
+  #
+  # Examples for API-based embeddings:
+  #   embedding_provider: "openai"
+  #   embedding_model: "text-embedding-3-small"   # or "text-embedding-3-large"
+  #
+  #   embedding_provider: "openrouter"
+  #   embedding_model: "openai/text-embedding-3-small"
+
+  nli_model: "cross-encoder/nli-deberta-v3-large"
+  outlier_z_threshold: 2.0
+  lof_neighbors: 20
+  fragmentation_min_cluster_size: 5
+  nli_entailment_threshold: 0.5
+  duplicate_similarity_threshold: 0.95
+  batch_drift_kl_threshold: 0.1
+  top_k_suspects: 100
+  suspicion_weights:
+    embedding_outlier: 0.25
+    nli_mismatch: 0.25
+    low_confidence: 0.20
+    jury_disagreement: 0.15
+    rationale_inconsistency: 0.15

@@ -1,0 +1,13 @@
+# NLI hypothesis strings for the tpu labeling task.
+#
+# Each label maps to a natural-language hypothesis that should be entailed
+# by texts assigned to that label. Used by NLIScorer for model-independent
+# coherence verification.
+#
+# Label scale:
+#   0 = no trade policy uncertainty
+#   1 = trade policy uncertainty present
+
+labels:
+  "0": "This text does not discuss uncertainty, risk, or unpredictability regarding trade policy and is either unrelated to trade policy or describes settled, implemented trade policy without any indication of future change."
+  "1": "This text explicitly discusses uncertainty, risk, or unpredictability regarding trade policy, such as potential tariff changes, stalled trade negotiations, trade war threats, or debate over existing trade rules."

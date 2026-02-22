@@ -34,6 +34,7 @@ dependencies = [
     # Phase 1 dependencies
     'scipy>=1.11.0', # Confidence calibration
     'krippendorff>=0.8.1', # Inter-annotator agreement
+    'hdbscan>=0.8.33', # Cluster fragmentation analysis in diagnostics
     # Phase 2 dependencies
     'networkx>=3.0', # GraphRAG graph operations
     'python-louvain>=0.16', # GraphRAG community detection
@@ -75,6 +76,10 @@ dashboard = [
     'plotly>=5.24.0',  # Interactive visualizations
 ]
 
+lit = [
+    'lit-nlp>=1.2',  # Language Interpretability Tool for distilled model exploration
+]
+
 # Phase 2 optional dependencies (require additional setup)
 dspy = [
     'dspy-ai>=2.5.0',  # DSPy prompt optimization framework
@@ -113,6 +118,7 @@ phase3 = [
 all = [
     'streamlit>=1.43.0',
     'plotly>=5.24.0',
+    'lit-nlp>=1.2',
     'dspy-ai>=2.5.0',
     'dvc>=3.0.0',
     'dvc-s3>=3.0.0',

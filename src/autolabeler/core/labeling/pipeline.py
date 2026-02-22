@@ -28,7 +28,12 @@ import pandas as pd
 from loguru import logger
 
 from autolabeler.core.dataset_config import DatasetConfig, ModelConfig
-from autolabeler.core.llm_providers.providers import get_provider, LLMResponse
+from autolabeler.core.llm_providers.providers import (
+    CostTracker,
+    LLMProvider,
+    LLMResponse,
+    get_provider,
+)
 from autolabeler.core.prompts.registry import PromptRegistry
 from autolabeler.core.quality.confidence_scorer import ConfidenceScorer
 
@@ -85,45 +90,58 @@ class LabelingPipeline:
         dataset_config: DatasetConfig,
         prompt_registry: PromptRegistry,
         confidence_scorer: ConfidenceScorer | None = None,
+        max_budget: float = 0.0,
+        custom_providers: dict[str, LLMProvider] | None = None,
     ):
         """Initialize pipeline.
-        
+
         Parameters:
-            dataset_config: Configuration for this dataset
-            prompt_registry: Prompt registry for this dataset
-            confidence_scorer: Optional pre-calibrated confidence scorer
+            dataset_config: Configuration for this dataset.
+            prompt_registry: Prompt registry for this dataset.
+            confidence_scorer: Optional pre-calibrated confidence scorer.
+            max_budget: Maximum USD spend (0 = unlimited). When exceeded the
+                pipeline stops labeling and returns results collected so far.
+            custom_providers: Optional mapping of model name to a pre-built
+                ``LLMProvider`` instance. Keys must match the ``name`` field in
+                ``ModelConfig``. When a model name is found here the pre-built
+                instance is used directly instead of calling ``get_provider()``.
+                This is the programmatic injection path for corporate proxies or
+                any provider that requires custom constructor arguments.
+
+                Example::
+
+                    custom_providers = {
+                        "Corp LLM": MyCorporateProxy(model="internal-v2", token="..."),
+                    }
+                    pipeline = LabelingPipeline(config, registry, custom_providers=custom_providers)
         """
         self.config = dataset_config
         self.prompts = prompt_registry
         self.confidence_scorer = confidence_scorer or ConfidenceScorer()
-        
+        self.cost_tracker = CostTracker(budget=max_budget)
+        self._custom_providers: dict[str, LLMProvider] = custom_providers or {}
+
         # Load jury weights if provided
         self.jury_weights = None
         if self.config.jury_weights_path:
             from ..quality.jury_weighting import JuryWeightLearner
             self.jury_weights = JuryWeightLearner.load(self.config.jury_weights_path)
             logger.info(f"Loaded jury weights from {self.config.jury_weights_path}")
-        
+
         # Initialize providers
         self.jury_providers = [
-            get_provider(m.provider, m.model)
+            self._resolve_provider(m)
             for m in self.config.jury_models
         ]
-        
+
         self.gate_provider = None
         if self.config.gate_model:
-            self.gate_provider = get_provider(
-                self.config.gate_model.provider,
-                self.config.gate_model.model
-            )
-        
+            self.gate_provider = self._resolve_provider(self.config.gate_model)
+
         self.candidate_provider = None
         if self.config.candidate_model:
-            self.candidate_provider = get_provider(
-                self.config.candidate_model.provider,
-                self.config.candidate_model.model
-            )
-        
+            self.candidate_provider = self._resolve_provider(self.config.candidate_model)
+
         # Initialize cascade strategy
         self.cascade = None
         if self.config.use_cascade:
@@ -134,15 +152,12 @@ class LabelingPipeline:
                 for i, t in enumerate(self.cascade.tiers())
             ]
             logger.info(f"Cascade mode enabled: {', '.join(tier_summary)}")
-        
+
         # Initialize verification
         self.verifier = None
         if self.config.use_cross_verification and self.config.verification_model:
             from .verification import CrossVerifier
-            verifier_provider = get_provider(
-                self.config.verification_model.provider,
-                self.config.verification_model.model
-            )
+            verifier_provider = self._resolve_provider(self.config.verification_model)
             self.verifier = CrossVerifier(
                 verifier_provider,
                 self.config.verification_model,
@@ -150,11 +165,28 @@ class LabelingPipeline:
                 self.config
             )
             logger.info(f"Initialized cross-verifier with {self.config.verification_model.name}")
-        
+
         logger.info(
             f"Initialized LabelingPipeline for {self.config.name} with "
             f"{len(self.jury_providers)} jury models"
         )
+
+    def _resolve_provider(self, model_config: ModelConfig) -> LLMProvider:
+        """Resolve the LLM provider for a given model config.
+
+        Checks ``custom_providers`` by model name first, then falls back to
+        ``get_provider()`` using the provider/model strings from the config.
+
+        Parameters:
+            model_config: Model configuration specifying provider, model, and name.
+
+        Returns:
+            An ``LLMProvider`` instance ready to call.
+        """
+        if model_config.name in self._custom_providers:
+            logger.debug(f"Using injected custom provider for model '{model_config.name}'")
+            return self._custom_providers[model_config.name]
+        return get_provider(model_config.provider, model_config.model)
     
     async def label_one(self, text: str, rag_examples: str = "") -> LabelResult:
         """Label a single text through the pipeline.
@@ -403,6 +435,8 @@ class LabelingPipeline:
             logprobs=model_config.has_logprobs,
             response_schema=response_schema,
         )
+        
+        self.cost_tracker.add(response.cost)
         
         result = {
             "label": None,
@@ -675,15 +709,37 @@ class LabelingPipeline:
         if text_col not in df.columns:
             raise ValueError(f"Text column '{text_col}' not found in dataframe")
         
-        # Resume logic
+        # Resume: reload previous checkpoint and skip already-labeled rows
+        all_results = []
         if resume and output_path.exists():
             existing_df = pd.read_csv(output_path)
-            logger.info(f"Resuming from {output_path}")
-            # TODO: Implement resume logic to skip already-labeled rows
-        
-        all_results = []
+            if text_col in existing_df.columns:
+                already_labeled = set(existing_df[text_col].astype(str))
+                original_len = len(df)
+                df = df[~df[text_col].astype(str).isin(already_labeled)].reset_index(drop=True)
+                # Carry forward previous results so the final CSV is complete
+                all_results = existing_df.to_dict("records")
+                logger.info(
+                    f"Resumed from {output_path}: "
+                    f"{len(already_labeled)} already labeled, "
+                    f"{len(df)} remaining of {original_len} total"
+                )
+            else:
+                logger.warning(
+                    f"Checkpoint file missing '{text_col}' column -- "
+                    f"starting from scratch"
+                )
         
         for i in range(0, len(df), self.config.batch_size):
+            # Budget gate: stop before the next batch if budget is exhausted
+            if self.cost_tracker.budget_exceeded:
+                logger.warning(
+                    f"Budget exhausted (${self.cost_tracker.total_cost:.4f} "
+                    f"of ${self.cost_tracker.budget:.2f}) -- "
+                    f"stopping after {len(all_results)} labeled samples"
+                )
+                break
+            
             batch_df = df.iloc[i:i + self.config.batch_size]
             
             tasks = [
@@ -715,8 +771,12 @@ class LabelingPipeline:
             results_df.to_csv(output_path, index=False)
             
             done = min(i + self.config.batch_size, len(df))
+            cost_str = f"${self.cost_tracker.total_cost:.4f}"
+            if self.cost_tracker.budget > 0:
+                cost_str += f" / ${self.cost_tracker.budget:.2f}"
             status = (
                 f"Labeled {done}/{len(df)} | "
+                f"cost: {cost_str} | "
                 f"ACCEPT: {sum(1 for r in all_results if r['tier']=='ACCEPT')} | "
                 f"SOFT: {sum(1 for r in all_results if r['tier']=='SOFT')} | "
                 f"QUARANTINE: {sum(1 for r in all_results if r['tier']=='QUARANTINE')}"
@@ -728,4 +788,24 @@ class LabelingPipeline:
                 status += f" | cascade early exits: {early_exits}/{done}"
             logger.info(status)
         
-        return pd.DataFrame(all_results)
+        final_df = pd.DataFrame(all_results)
+
+        # Post-labeling diagnostics hook
+        if (
+            self.config.diagnostics
+            and self.config.diagnostics.enabled
+            and self.config.diagnostics.run_post_labeling
+        ):
+            try:
+                from ..diagnostics import run_diagnostics
+                diagnostics_dir = output_path.parent / 'diagnostics'
+                logger.info(f'Running post-labeling diagnostics -> {diagnostics_dir}')
+                run_diagnostics(
+                    labeled_df=final_df,
+                    config=self.config,
+                    output_dir=diagnostics_dir,
+                )
+            except Exception as e:
+                logger.error(f'Post-labeling diagnostics failed (non-fatal): {e}')
+
+        return final_df
