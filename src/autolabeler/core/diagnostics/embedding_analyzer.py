@@ -107,12 +107,12 @@ class EmbeddingAnalyzer:
         cache_path = self._cache_dir / f'{self._cache_key(texts)}.pkl'
 
         if cache_path.exists():
-            logger.debug(f'Loading embeddings from cache: {cache_path}')
+            logger.info(f'Loading embeddings from cache: {cache_path}')
             with open(cache_path, 'rb') as f:
                 return pickle.load(f)
 
         provider = self._get_provider()
-        embeddings = provider.embed(texts)
+        embeddings = provider.embed(texts, batch_size=self.config.embedding_batch_size)
 
         with open(cache_path, 'wb') as f:
             pickle.dump(embeddings, f)
@@ -276,6 +276,14 @@ class EmbeddingAnalyzer:
     ) -> dict[str, Any]:
         """Run HDBSCAN within each label class to detect fragmentation.
 
+        Follows the BERTopic pattern: UMAP-reduce the full embedding space to
+        a low-dimensional representation before clustering. This avoids the
+        curse of dimensionality (density estimates are unreliable in 1000+ dims)
+        and makes the KD-tree in HDBSCAN orders of magnitude faster.
+
+        The UMAP reduction is performed once on all samples (preserving global
+        structure), then sliced per-class for HDBSCAN.
+
         A class that fragments into k > 2 disconnected clusters suggests
         either underspecified labeling criteria or a genuine multi-modal
         distribution in the data.
@@ -303,12 +311,32 @@ class EmbeddingAnalyzer:
             logger.warning('hdbscan not installed -- skipping fragmentation analysis. pip install hdbscan')
             return {}
 
+        import umap
+
+        umap_dim = self.config.fragmentation_umap_dim
+        # Only reduce if the embedding dimensionality exceeds the target
+        if embeddings.shape[1] > umap_dim:
+            logger.info(
+                f'UMAP-reducing {embeddings.shape[1]}-D → {umap_dim}-D '
+                f'for HDBSCAN fragmentation analysis'
+            )
+            reducer = umap.UMAP(
+                n_components=umap_dim,
+                n_neighbors=15,
+                min_dist=0.0,
+                metric='cosine',
+                random_state=42,
+            )
+            reduced = reducer.fit_transform(embeddings)
+        else:
+            reduced = embeddings
+
         label_array = np.array(labels)
         report: dict[str, Any] = {}
 
         for lbl in np.unique(label_array):
             mask = label_array == lbl
-            class_embs = embeddings[mask]
+            class_embs = reduced[mask]
             n_samples = len(class_embs)
 
             if n_samples < self.config.fragmentation_min_cluster_size * 2:
@@ -327,7 +355,7 @@ class EmbeddingAnalyzer:
             )
             clusterer = hdbscan.HDBSCAN(
                 min_cluster_size=min_cluster,
-                metric='euclidean',  # embeddings are L2-normalized, so euclidean ≈ cosine
+                metric='euclidean',
             )
             cluster_labels = clusterer.fit_predict(class_embs)
 

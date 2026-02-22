@@ -397,6 +397,15 @@ class RationaleAnalyzer:
         """
         logger.info(f'RationaleAnalyzer: analysing {len(df)} samples')
 
+        if 'reasoning' not in df.columns:
+            logger.info('Skipping rationale analysis: reasoning column not present')
+            return {
+                'keyword_misalignments': pd.DataFrame(columns=['index', 'label', 'keyword_found', 'keyword_class', 'is_misaligned']),
+                'cluster_mismatches': pd.DataFrame(columns=['index', 'label', 'margin', 'is_cluster_mismatch']),
+                'reasoning_divergence': pd.DataFrame(columns=['index', 'label', 'n_jurors', 'rationale_sim', 'is_divergent']),
+                'summary': {'n_keyword_misalignments': 0, 'n_cluster_mismatches': 0, 'n_reasoning_divergences': 0},
+            }
+
         keyword_df = self.keyword_label_alignment(df, keyword_map=keyword_map)
         cluster_df = self.rationale_embedding_clustering(df)
         divergence_df = self.cross_juror_rationale_disagreement(df)

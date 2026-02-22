@@ -5,27 +5,63 @@ Runs the full diagnostics pipeline on an already-labeled CSV without
 re-running the labeling pipeline. Useful for auditing existing outputs
 or for running specific diagnostic modules on demand.
 
+Works with both pipeline-generated output (jury_labels, tier, confidence
+columns) and plain human-labeled CSVs (just text + label). Modules that
+need pipeline-specific columns are skipped automatically.
+
 Usage:
-    # Full diagnostics with all modules
+    # Full diagnostics with all standard modules
     python scripts/run_diagnostics.py \\
         --dataset fed_headlines \\
         --labeled-data outputs/fed_headlines/labeled.csv \\
         --output outputs/fed_headlines/diagnostics/
 
-    # Only embedding and distribution modules
+    # Only embedding and distribution modules (fastest)
     python scripts/run_diagnostics.py \\
         --dataset fed_headlines \\
         --labeled-data outputs/fed_headlines/labeled.csv \\
         --output outputs/fed_headlines/diagnostics/ \\
         --enable embedding,distribution
 
-    # Skip NLI (large model download) for faster runs
+    # Skip NLI (avoids large model download) for faster runs
     python scripts/run_diagnostics.py \\
         --dataset fed_headlines \\
         --labeled-data outputs/fed_headlines/labeled.csv \\
         --output outputs/fed_headlines/diagnostics/ \\
         --enable embedding,distribution,batch,rationale,report \\
         --top-k-suspects 200
+
+    # Human-labeled data with non-standard column names
+    python scripts/run_diagnostics.py \\
+        --dataset fed_headlines \\
+        --labeled-data datasets/fedspeak/human_labeled.csv \\
+        --output outputs/fed_headlines/diagnostics_human/ \\
+        --text-column headline \\
+        --label-column hawk_dove \\
+        --enable embedding,distribution,nli,report
+
+    # Include LLM-powered gap analysis (requires gap_analysis.enabled in config)
+    python scripts/run_diagnostics.py \\
+        --dataset fed_headlines \\
+        --labeled-data outputs/fed_headlines/labeled.csv \\
+        --output outputs/fed_headlines/diagnostics/ \\
+        --enable embedding,distribution,nli,report,gap_analysis
+
+    # Force gap analysis for a one-off run without editing YAML
+    python scripts/run_diagnostics.py \\
+        --dataset fed_headlines \\
+        --labeled-data outputs/fed_headlines/labeled.csv \\
+        --output outputs/fed_headlines/diagnostics/ \\
+        --enable embedding,report,gap_analysis \\
+        --force-gap-analysis
+
+    # Quick test on first 500 rows
+    python scripts/run_diagnostics.py \\
+        --dataset fed_headlines \\
+        --labeled-data outputs/fed_headlines/labeled.csv \\
+        --output outputs/fed_headlines/diagnostics_test/ \\
+        --limit 500 \\
+        --enable embedding,report
 """
 
 import argparse
@@ -91,8 +127,9 @@ def main() -> int:
         default='embedding,distribution,nli,batch,rationale,report',
         help=(
             'Comma-separated list of modules to run. '
-            'Options: embedding, distribution, nli, batch, rationale, report. '
-            'Default: all modules.'
+            'Options: embedding, distribution, nli, batch, rationale, report, gap_analysis. '
+            'Default: all standard modules (gap_analysis must be opted in explicitly '
+            'and also requires diagnostics.gap_analysis.enabled: true in config).'
         ),
     )
     parser.add_argument(
@@ -107,10 +144,37 @@ def main() -> int:
         help='Path to hypotheses.yaml for NLI scoring (overrides config)',
     )
     parser.add_argument(
+        '--text-column',
+        default=None,
+        help=(
+            'Name of the column containing text to analyse. '
+            'Defaults to the text_column value in the dataset config (usually "text"). '
+            'Use this for human-labeled data where the text column has a different name '
+            '(e.g. "headline").'
+        ),
+    )
+    parser.add_argument(
+        '--label-column',
+        default=None,
+        help=(
+            'Name of the column containing labels. Defaults to "label". '
+            'Use this for human-labeled data where the label column has a different name '
+            '(e.g. "hawk_dove").'
+        ),
+    )
+    parser.add_argument(
         '--limit',
         type=int,
         default=None,
         help='Limit to first N rows (useful for testing)',
+    )
+    parser.add_argument(
+        '--force-gap-analysis',
+        action='store_true',
+        help=(
+            'Force-enable gap_analysis even if diagnostics.gap_analysis.enabled '
+            'is False in the config. Useful for one-off CLI runs without editing YAML.'
+        ),
     )
     parser.add_argument(
         '--verbose', '-v',
@@ -145,6 +209,13 @@ def main() -> int:
     if args.hypotheses is not None:
         config.diagnostics.hypotheses_path = args.hypotheses
 
+    if args.force_gap_analysis:
+        from src.autolabeler.core.diagnostics.config import GapAnalysisConfig
+        if config.diagnostics.gap_analysis is None:
+            config.diagnostics.gap_analysis = GapAnalysisConfig(enabled=True)
+        else:
+            config.diagnostics.gap_analysis.enabled = True
+
     # Load labeled data
     labeled_path = Path(args.labeled_data)
     if not labeled_path.exists():
@@ -160,7 +231,7 @@ def main() -> int:
 
     # Parse enabled modules
     enabled_modules = [m.strip() for m in args.enable.split(',') if m.strip()]
-    valid_modules = {'embedding', 'distribution', 'nli', 'batch', 'rationale', 'report'}
+    valid_modules = {'embedding', 'distribution', 'nli', 'batch', 'rationale', 'report', 'gap_analysis'}
     invalid = set(enabled_modules) - valid_modules
     if invalid:
         logger.error(f'Unknown modules: {invalid}. Valid: {valid_modules}')
@@ -169,6 +240,10 @@ def main() -> int:
     logger.info(f'Enabled modules: {enabled_modules}')
     logger.info(f'Output directory: {args.output}')
 
+    # Resolve column names (CLI overrides > config > defaults)
+    text_col = args.text_column or getattr(config, 'text_column', 'text')
+    label_col = args.label_column or 'label'
+
     # Run diagnostics
     output_dir = Path(args.output)
     results = run_diagnostics(
@@ -176,6 +251,8 @@ def main() -> int:
         config=config,
         output_dir=output_dir,
         enabled_modules=enabled_modules,
+        text_col=text_col,
+        label_col=label_col,
     )
 
     # Print summary to console

@@ -1,0 +1,209 @@
+# ===========================================================================
+# Dataset Configuration Template
+# ===========================================================================
+# Copy this file to configs/{your_dataset}.yaml and fill in the values.
+# All sections marked REQUIRED must be set. Everything else has sensible defaults.
+# ===========================================================================
+
+# REQUIRED: Dataset identifier. Used in output paths and log messages.
+name: my_dataset
+
+# REQUIRED: All valid label values. Must be strings.
+# For ordinal tasks (e.g. sentiment -2 to +2): ["-2", "-1", "0", "1", "2"]
+# For binary: ["0", "1"]
+# To include an irrelevant/skip label: add "-99" or "irrelevant"
+labels: ["0", "1", "2"]
+
+# REQUIRED: Column name in your input CSV/JSONL containing the text to label.
+text_column: text
+
+# Input file format: "csv" or "jsonl"
+input_format: csv
+
+# ---------------------------------------------------------------------------
+# Pipeline Stages
+# Toggle these on/off depending on your task complexity.
+# ---------------------------------------------------------------------------
+
+# Stage 1: Relevancy gate — cheap pre-filter to skip irrelevant items.
+# Requires a gate_model below. Saves cost if many inputs aren't labelable.
+use_relevancy_gate: false
+
+# Stage 4: Candidate annotation — calls an additional model on jury disagreements
+# to produce a soft label distribution. Helps with borderline cases.
+use_candidate_annotation: true
+
+# Stage 5: Cross-verification — independently reviews uncertain labels using
+# a different model family. Improves Cohen's kappa at additional cost.
+use_cross_verification: false
+
+# Enforce JSON schema on LLM responses to eliminate parse errors.
+use_structured_output: true
+
+# Cascade mode: call cheapest model first, escalate only when uncertain.
+# Saves 40-60% API cost. Order jury models by cost_tier (1=cheapest).
+use_cascade: false
+
+# ---------------------------------------------------------------------------
+# Jury Models (REQUIRED: at least 2)
+# ---------------------------------------------------------------------------
+# Use heterogeneous providers (Google + OpenAI + Anthropic) for best results.
+# Diversity across model families reduces correlated errors.
+jury_models:
+  - provider: google                   # "google", "openai", "anthropic", "openrouter"
+    model: gemini-2.5-flash
+    name: Gemini-Flash                 # display name in logs and reports
+    has_logprobs: false                # only OpenAI models support this
+    self_consistency_samples: 3        # extra temperature-varied calls for confidence
+    cost_tier: 1                       # cascade order: 1 = called first (cheapest)
+
+  - provider: openai
+    model: gpt-4o
+    name: GPT-4o
+    has_logprobs: true                 # enables logprob-based confidence (best)
+    self_consistency_samples: 0        # not needed with logprobs
+    cost_tier: 2
+
+  - provider: anthropic
+    model: claude-sonnet-4-5-20250929
+    name: Claude
+    has_logprobs: false
+    self_consistency_samples: 3
+    cost_tier: 2
+
+# Using OpenRouter instead? One key, 200+ models:
+# jury_models:
+#   - provider: openrouter
+#     model: google/gemini-2.5-flash
+#     name: Gemini-Flash
+#     cost_tier: 1
+#   - provider: openrouter
+#     model: openai/gpt-4o
+#     name: GPT-4o
+#     cost_tier: 2
+#   - provider: openrouter
+#     model: anthropic/claude-sonnet-4
+#     name: Claude
+#     cost_tier: 2
+
+# ---------------------------------------------------------------------------
+# Optional Stage Models
+# ---------------------------------------------------------------------------
+
+# Relevancy gate (Stage 1, only if use_relevancy_gate: true)
+gate_model:
+  provider: openai
+  model: gpt-4o-mini
+  name: Gate
+
+# Candidate annotation (Stage 4, only if use_candidate_annotation: true)
+candidate_model:
+  provider: anthropic
+  model: claude-sonnet-4-5-20250929
+  name: Claude-Candidate
+
+# Cross-verification (Stage 5, only if use_cross_verification: true)
+# verification_model:
+#   provider: google
+#   model: gemini-2.5-pro
+#   name: Verifier
+# verification_threshold: 0.6   # trigger verification below this confidence
+
+# ---------------------------------------------------------------------------
+# Temperature Settings
+# ---------------------------------------------------------------------------
+jury_temperature: 0.1          # low for deterministic labels
+sc_temperature: 0.3            # higher for self-consistency sample diversity
+candidate_temperature: 0.2     # moderate for soft label generation
+
+# ---------------------------------------------------------------------------
+# Budget and Batching
+# ---------------------------------------------------------------------------
+budget_per_model: 10.0         # max USD per model per run (0 = unlimited)
+batch_size: 10                 # texts processed per batch
+
+# ---------------------------------------------------------------------------
+# Cascade Thresholds (only relevant when use_cascade: true)
+# ---------------------------------------------------------------------------
+cascade_confidence_threshold: 0.85  # single-model confidence to accept early
+cascade_agreement_threshold: 0.80   # two-model agreement to accept early
+
+# ---------------------------------------------------------------------------
+# LIT Integration (Language Interpretability Tool)
+# Used by scripts/run_lit.py. All values can be overridden via CLI flags.
+# ---------------------------------------------------------------------------
+lit:
+  embedding_layer: null          # e.g. "encoder.pooler" — set after training
+  enable_gradients: false        # token saliency maps (requires GPU)
+  enable_attention: false        # attention head visualisation
+  port: 4321
+
+# ---------------------------------------------------------------------------
+# Post-Labeling Diagnostics
+# Run with: scripts/run_diagnostics.py
+# See docs/diagnostics.md for module details.
+# ---------------------------------------------------------------------------
+diagnostics:
+  enabled: true
+  run_post_labeling: false       # auto-run after label_dataframe()
+
+  # Embedding provider: "local" (free, on-device), "openai", or "openrouter"
+  embedding_provider: "local"
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  embedding_batch_size: 64       # local: 64; OpenAI/OpenRouter: up to 2048
+
+  # NLI coherence scoring. Requires prompts/{dataset}/hypotheses.yaml.
+  nli_model: "cross-encoder/nli-deberta-v3-large"
+  nli_batch_size: 64             # GPU: 128-256; CPU: 32-64
+  nli_max_length: 128            # set lower (45-64) for short texts
+  nli_entailment_threshold: 0.5
+
+  # Embedding analysis thresholds
+  outlier_z_threshold: 2.0
+  lof_neighbors: 20
+  fragmentation_min_cluster_size: 5
+  fragmentation_umap_dim: 10     # UMAP dims before HDBSCAN (10 is usually right)
+
+  # Duplicate detection
+  duplicate_similarity_threshold: 0.95
+
+  # Batch drift detection
+  batch_drift_kl_threshold: 0.1
+
+  # Suspicion scoring weights (should sum to ~1.0)
+  suspicion_weights:
+    embedding_outlier: 0.25
+    nli_mismatch: 0.25
+    low_confidence: 0.20
+    jury_disagreement: 0.15
+    rationale_inconsistency: 0.15
+
+  top_k_suspects: 100
+
+  # LLM-powered gap analysis (see docs/gap-analysis.md)
+  gap_analysis:
+    enabled: false
+    analysis_provider: "google"
+    analysis_model: "gemini-2.5-flash"
+    min_cluster_size: 5
+    max_clusters: 20
+    representative_samples: 10
+    generate_synthetic: true
+    synthetic_per_cluster: 5
+    top_n_suspicious: 500
+
+# ---------------------------------------------------------------------------
+# Probe Model (local RoBERTa fine-tuning for fast evaluation)
+# Train with: scripts/train_probe.py
+# See docs/probe-model.md for details.
+# ---------------------------------------------------------------------------
+probe:
+  model: "roberta-base"          # distilroberta-base (faster) or roberta-large (heavier)
+  epochs: 5
+  batch_size: 32                 # lower to 16 if you hit OOM
+  learning_rate: 2.0e-5
+  val_split: 0.2
+  max_length: 128                # set lower (64) for short texts under ~40 tokens
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  use_training_weights: true     # weight by distillation tier (ACCEPT > SOFT > QUARANTINE)

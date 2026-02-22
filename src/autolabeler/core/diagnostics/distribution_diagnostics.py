@@ -465,8 +465,19 @@ class DistributionDiagnostics:
 
         exact_dups = self.detect_exact_duplicates(df, text_col, label_col)
         dist_shift = self.label_distribution_shift(df, label_col)
-        confusion = self.class_confusion_profile(df)
-        conf_by_class = self.confidence_by_class(df, label_col)
+
+        if 'jury_labels' in df.columns:
+            confusion = self.class_confusion_profile(df, final_label_col=label_col)
+        else:
+            logger.info('Skipping class confusion profile: jury_labels column not present')
+            confusion = {'confusion_pairs': [], 'most_confused_pairs': [], 'n_disagreements': 0}
+
+        if 'jury_confidences' in df.columns:
+            conf_by_class = self.confidence_by_class(df, label_col)
+        else:
+            logger.info('Skipping confidence-by-class: jury_confidences column not present')
+            conf_by_class = {'per_class': {}, 'dataset_mean': None, 'dataset_std': None, 'low_confidence_classes': []}
+
         length_corr = self.label_length_correlation(df, text_col, label_col)
 
         summary = {

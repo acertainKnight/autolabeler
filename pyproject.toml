@@ -98,6 +98,14 @@ phase2 = [
     'dvc>=3.0.0',
 ]
 
+# Probe model: lightweight local fine-tuning for fast training-data iteration
+probe = [
+    'transformers>=4.46.0',  # Model loading, Trainer, AutoModel
+    'torch>=2.0.0',          # PyTorch backend
+    'accelerate>=1.2.0',     # Trainer backend utilities
+    'datasets>=2.14.0',      # HuggingFace Dataset class used in ProbeTrainer
+]
+
 # Phase 3 optional dependencies (DPO/RLHF - requires GPU)
 dpo = [
     'transformers>=4.46.0',  # Model loading and training
@@ -128,6 +136,7 @@ all = [
     'langsmith>=0.2.0',
     'evidently>=0.5.8',
     'transformers>=4.46.0',
+    'datasets>=2.14.0',
     'trl>=0.12.1',
     'peft>=0.13.0',
     'accelerate>=1.2.0',

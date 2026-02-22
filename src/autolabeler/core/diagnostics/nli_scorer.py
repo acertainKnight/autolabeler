@@ -58,8 +58,12 @@ class NLIScorer:
             return
         from sentence_transformers import CrossEncoder
 
-        logger.info(f'Loading NLI model: {self.config.nli_model}')
-        self._model = CrossEncoder(self.config.nli_model)
+        max_len = self.config.nli_max_length
+        logger.info(
+            f'Loading NLI model: {self.config.nli_model}'
+            f'{f" (max_length={max_len})" if max_len else ""}'
+        )
+        self._model = CrossEncoder(self.config.nli_model, max_length=max_len)
 
     def load_hypotheses(self, path: str | Path) -> dict[str, str]:
         """Load label-to-hypothesis mapping from YAML file.
@@ -101,6 +105,20 @@ class NLIScorer:
         hypotheses = {str(k): str(v) for k, v in data['labels'].items()}
         logger.info(f'Loaded {len(hypotheses)} label hypotheses from {path}')
         return hypotheses
+
+    @staticmethod
+    def _extract_entailment(raw_scores: np.ndarray) -> np.ndarray:
+        """Extract entailment probabilities from raw NLI model output.
+
+        Args:
+            raw_scores: Model output, shape (n,) or (n, 3).
+
+        Returns:
+            1-D array of entailment probabilities, length n.
+        """
+        if raw_scores.ndim == 2 and raw_scores.shape[1] == 3:
+            return raw_scores[:, 2].astype(float)
+        return raw_scores.astype(float)
 
     def score_entailment(
         self,
@@ -147,23 +165,22 @@ class NLIScorer:
             return pd.DataFrame(columns=['index', 'label', 'hypothesis', 'entailment_score', 'is_flagged'])
 
         logger.info(f'Scoring entailment for {len(pairs)} samples...')
-        # CrossEncoder returns shape (n, 3) for NLI: [contradiction, neutral, entailment]
-        raw_scores = self._model.predict(pairs, apply_softmax=True)
+        raw_scores = self._model.predict(
+            pairs, apply_softmax=True, batch_size=self.config.nli_batch_size,
+        )
+        entailment_scores = self._extract_entailment(raw_scores)
+        threshold = self.config.nli_entailment_threshold
 
         records = []
         for local_i, global_i in enumerate(valid_indices):
-            if len(raw_scores.shape) == 2 and raw_scores.shape[1] == 3:
-                entailment_score = float(raw_scores[local_i, 2])
-            else:
-                entailment_score = float(raw_scores[local_i])
-
             lbl = str(labels[global_i])
+            score = entailment_scores[local_i]
             records.append({
                 'index': global_i,
                 'label': lbl,
                 'hypothesis': hypotheses.get(lbl, ''),
-                'entailment_score': entailment_score,
-                'is_flagged': entailment_score < self.config.nli_entailment_threshold,
+                'entailment_score': score,
+                'is_flagged': score < threshold,
             })
 
         return pd.DataFrame(records).sort_values('entailment_score')
@@ -174,13 +191,17 @@ class NLIScorer:
         labels: list[str],
         hypotheses: dict[str, str],
     ) -> pd.DataFrame:
-        """Score entailment for ALL label hypotheses per sample.
+        """Score entailment for ALL label hypotheses per sample (batched).
 
         Flags samples where an alternative label hypothesis has higher entailment
         than the assigned label. Ranked by margin (negative = likely wrong label).
 
         Margin = entailment(assigned) - max(entailment(others)).
         Negative margin indicates a likely labeling error.
+
+        All (text, hypothesis) pairs are collected up-front and scored in a
+        single batched ``predict()`` call for dramatically better throughput
+        compared to per-sample inference.
 
         Args:
             texts: Input texts.
@@ -204,39 +225,60 @@ class NLIScorer:
         self._load_model()
 
         all_label_keys = list(hypotheses.keys())
-        records = []
+        n_labels = len(all_label_keys)
+
+        all_pairs: list[tuple[str, str]] = []
+        valid_indices: list[int] = []
 
         for i, (text, assigned_lbl) in enumerate(zip(texts, labels)):
-            assigned_lbl = str(assigned_lbl)
-            if assigned_lbl not in hypotheses:
+            if str(assigned_lbl) not in hypotheses:
                 continue
+            valid_indices.append(i)
+            for lbl in all_label_keys:
+                all_pairs.append((text, hypotheses[lbl]))
 
-            # Score against all hypotheses
-            pairs = [(text, hypotheses[lbl]) for lbl in all_label_keys]
-            raw_scores = self._model.predict(pairs, apply_softmax=True)
+        if not all_pairs:
+            logger.warning('No valid samples for contrastive scoring')
+            return pd.DataFrame(columns=[
+                'index', 'label', 'assigned_entailment',
+                'best_alternative_label', 'best_alternative_entailment',
+                'margin', 'is_contrastive_violation',
+            ])
 
-            scores_by_label: dict[str, float] = {}
-            for j, lbl in enumerate(all_label_keys):
-                if len(raw_scores.shape) == 2 and raw_scores.shape[1] == 3:
-                    scores_by_label[lbl] = float(raw_scores[j, 2])
-                else:
-                    scores_by_label[lbl] = float(raw_scores[j])
+        logger.info(
+            f'Contrastive scoring: {len(valid_indices)} samples × '
+            f'{n_labels} labels = {len(all_pairs)} pairs'
+        )
+        raw_scores = self._model.predict(
+            all_pairs, apply_softmax=True, batch_size=self.config.nli_batch_size,
+        )
+        entailment_scores = self._extract_entailment(raw_scores)
 
-            assigned_score = scores_by_label[assigned_lbl]
-            other_scores = {lbl: s for lbl, s in scores_by_label.items() if lbl != assigned_lbl}
+        # Reshape to (n_valid_samples, n_labels)
+        score_matrix = entailment_scores.reshape(len(valid_indices), n_labels)
 
-            if not other_scores:
-                continue
+        records = []
+        for row_i, global_i in enumerate(valid_indices):
+            assigned_lbl = str(labels[global_i])
+            assigned_col = all_label_keys.index(assigned_lbl)
+            assigned_score = float(score_matrix[row_i, assigned_col])
 
-            best_alt = max(other_scores, key=other_scores.get)
-            best_alt_score = other_scores[best_alt]
+            alt_scores = np.copy(score_matrix[row_i])
+            alt_scores[assigned_col] = -np.inf
+            best_alt_col = int(np.argmax(alt_scores))
+            best_alt_score = float(score_matrix[row_i, best_alt_col])
             margin = assigned_score - best_alt_score
 
+            scores_by_label = {
+                lbl: float(score_matrix[row_i, j])
+                for j, lbl in enumerate(all_label_keys)
+            }
+
             records.append({
-                'index': i,
+                'index': global_i,
                 'label': assigned_lbl,
                 'assigned_entailment': assigned_score,
-                'best_alternative_label': best_alt,
+                'best_alternative_label': all_label_keys[best_alt_col],
                 'best_alternative_entailment': best_alt_score,
                 'margin': margin,
                 'is_contrastive_violation': margin < 0,

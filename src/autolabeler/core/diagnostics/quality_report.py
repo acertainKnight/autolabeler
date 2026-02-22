@@ -70,7 +70,7 @@ class QualityReportGenerator:
 
         conf_results = diagnostic_results.get('distribution', {}).get('confidence_by_class', {})
         per_class_conf = conf_results.get('per_class', {})
-        dataset_mean_conf = conf_results.get('dataset_mean', 0.7)
+        dataset_mean_conf = conf_results.get('dataset_mean') or 0.7
 
         fragmentation = diagnostic_results.get('embedding', {}).get('cluster_fragmentation', {})
         centroid_df = diagnostic_results.get('embedding', {}).get('centroid_violations')
@@ -103,12 +103,15 @@ class QualityReportGenerator:
             n_clusters = frag_info.get('n_clusters', 1)
             is_fragmented = frag_info.get('fragmented', False)
 
-            # Tier distribution
-            lbl_tiers = labeled_df[lbl_mask]['tier'].value_counts(normalize=True).to_dict()
+            # Tier distribution (only for pipeline-labeled data)
+            if 'tier' in labeled_df.columns:
+                lbl_tiers = labeled_df[lbl_mask]['tier'].value_counts(normalize=True).to_dict()
+            else:
+                lbl_tiers = {}
 
             # Heuristic error risk estimate
             risk_factors = []
-            if mean_conf < 0.6:
+            if mean_conf is not None and mean_conf < 0.6:
                 risk_factors.append('low_confidence')
             if centroid_violation_rate > 0.1:
                 risk_factors.append('centroid_violations')
@@ -122,7 +125,7 @@ class QualityReportGenerator:
             scorecard.append({
                 'label': lbl,
                 'n_samples': n_samples,
-                'mean_confidence': round(mean_conf, 4),
+                'mean_confidence': round(mean_conf, 4) if mean_conf is not None else None,
                 'centroid_violation_rate': round(centroid_violation_rate, 4),
                 'mean_nli_entailment': round(mean_nli, 4) if mean_nli is not None else None,
                 'n_embedding_clusters': n_clusters,
@@ -163,6 +166,9 @@ class QualityReportGenerator:
         model_drift = batch_results.get('model_drift', {})
         drift_flags = {m['model']: True for m in model_drift.get('flagged_models', [])}
         overall_model_dists = model_drift.get('overall_model_distributions', {})
+
+        if 'label' not in labeled_df.columns:
+            return {'per_model_class_agreement': {}, 'drift_flags': drift_flags, 'overall_model_distributions': overall_model_dists}
 
         unique_labels = sorted(labeled_df['label'].dropna().astype(str).unique())
 
@@ -393,7 +399,11 @@ class QualityReportGenerator:
 
         # Summary statistics
         tier_counts = labeled_df['tier'].value_counts().to_dict() if 'tier' in labeled_df.columns else {}
-        label_counts = labeled_df['label'].astype(str).value_counts().to_dict() if 'label' in labeled_df.columns else {}
+        label_counts = (
+            labeled_df['label'].astype(str).value_counts().to_dict()
+            if 'label' in labeled_df.columns
+            else {}
+        )
 
         summary = {
             'dataset_name': dataset_name,
@@ -496,10 +506,11 @@ class QualityReportGenerator:
             ]
             for entry in scorecard:
                 nli = f'{entry["mean_nli_entailment"]:.3f}' if entry.get('mean_nli_entailment') is not None else 'N/A'
+                conf = f'{entry["mean_confidence"]:.3f}' if entry.get('mean_confidence') is not None else 'N/A'
                 lines.append(
                     f'| {entry["label"]} '
                     f'| {entry["n_samples"]:,} '
-                    f'| {entry["mean_confidence"]:.3f} '
+                    f'| {conf} '
                     f'| {entry["centroid_violation_rate"]:.3f} '
                     f'| {nli} '
                     f'| {entry["estimated_error_risk"]:.2f} |'

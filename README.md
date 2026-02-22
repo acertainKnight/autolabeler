@@ -27,15 +27,23 @@ python scripts/run_labeling.py \
 
 ## System Overview
 
-Five scripts, one pipeline, any dataset:
+Eight scripts, one pipeline, any dataset:
 
 ```mermaid
 graph LR
     A[Your Data<br/>CSV / JSONL] --> B[run_labeling.py]
     B --> C[Labeled Data<br/>+ soft labels]
 
+    C --> Diag[run_diagnostics.py]
+    Diag --> DiagOut[Quality Report<br/>+ Suspicion Scores]
+    DiagOut -.->|find errors| C
+
     C --> D[export_for_distillation.py]
     D --> E[Distillation JSONL<br/>+ training weights]
+
+    E --> Probe[train_probe.py]
+    Probe --> Metrics[Probe Metrics<br/>accuracy, F1]
+    Metrics -.->|data good enough?| D
 
     C --> F[calibrate_jury.py]
     F --> G[jury_weights.json]
@@ -53,7 +61,9 @@ graph LR
     J --> F
 
     style B fill:#2563eb,color:#fff
+    style Diag fill:#f59e0b,color:#fff
     style D fill:#059669,color:#fff
+    style Probe fill:#0891b2,color:#fff
     style F fill:#d97706,color:#fff
     style H fill:#7c3aed,color:#fff
     style K fill:#dc2626,color:#fff
@@ -62,10 +72,13 @@ graph LR
 | Script | Purpose | When to Use |
 |--------|---------|-------------|
 | `run_labeling.py` | Label data through multi-model jury pipeline | Always — this is the main entry point |
+| `run_diagnostics.py` | Post-hoc error detection and quality analysis | After labeling, to find suspicious samples |
+| `train_probe.py` | Fine-tune a local RoBERTa for fast evaluation | To measure training-data quality before cloud training |
+| `export_for_distillation.py` | Export with training weights + human mixing | To train a student model on the labeled data |
 | `optimize_prompts.py` | Improve prompts using DSPy + human labels | When you have ground-truth labels and want better accuracy |
 | `calibrate_jury.py` | Learn per-model, per-class reliability weights | After initial labeling, to improve aggregation |
 | `generate_programs.py` | Create cheap heuristic labeling functions | To scale up: label large unlabeled corpora cheaply |
-| `export_for_distillation.py` | Export with training weights + human mixing | To train a student model on the labeled data |
+| `run_lit.py` | Launch LIT browser UI for model interpretability | To visually inspect a distilled or probe model |
 
 ---
 
@@ -395,6 +408,120 @@ python scripts/export_for_distillation.py \
 
 ---
 
+## Post-Labeling Diagnostics
+
+After labeling, run diagnostics to find potential errors without ground truth:
+
+```bash
+# Full diagnostics on pipeline output
+python scripts/run_diagnostics.py \
+    --dataset fed_headlines \
+    --labeled-data outputs/fed_headlines/labeled.csv \
+    --output outputs/fed_headlines/diagnostics/
+
+# Human-labeled data with custom columns
+python scripts/run_diagnostics.py \
+    --dataset fed_headlines \
+    --labeled-data datasets/fedspeak/human_labeled.csv \
+    --output outputs/fed_headlines/diagnostics_human/ \
+    --text-column headline --label-column hawk_dove \
+    --enable embedding,distribution,nli,report
+```
+
+Diagnostics modules (mix and match via `--enable`):
+
+| Module | What it detects | Requires |
+|--------|----------------|----------|
+| `embedding` | Intra-class outliers, centroid violations, cluster fragmentation, near-duplicates | Embedding provider |
+| `distribution` | Class imbalance, length bias, label co-occurrence anomalies | Text + labels |
+| `nli` | Label-text semantic mismatches (e.g. dovish text labeled hawkish) | `hypotheses.yaml` |
+| `batch` | Temporal drift across batches, cascade-tier bias | Pipeline output (jury columns) |
+| `rationale` | Reasoning inconsistencies between models | Pipeline output (reasoning column) |
+| `report` | Aggregated Markdown + JSON quality report with recommendations | Any of the above |
+| `gap_analysis` | LLM-powered error clustering and synthetic data generation | Embeddings + suspicion scores |
+
+Outputs are written to the output directory: `suspicion_scores.csv`, `top_suspects.csv`, `quality_report.md`, `quality_report.json`, and UMAP visualisation HTML.
+
+See [docs/diagnostics.md](docs/diagnostics.md) for the full guide.
+
+---
+
+## Gap Analysis
+
+Gap analysis identifies *systematic* weaknesses in your training data — not just individual errors, but patterns of errors grouped by topic.
+
+```bash
+# Enable via config (diagnostics.gap_analysis.enabled: true) or force it:
+python scripts/run_diagnostics.py \
+    --dataset fed_headlines \
+    --labeled-data outputs/fed_headlines/labeled.csv \
+    --output outputs/fed_headlines/diagnostics/ \
+    --enable embedding,report,gap_analysis \
+    --force-gap-analysis
+```
+
+The gap analyzer:
+1. Pulls the highest-suspicion samples into an error pool.
+2. Clusters them by topic using UMAP + HDBSCAN on cached embeddings.
+3. Computes TF-IDF topic labels and label distributions per cluster.
+4. Sends each cluster to an LLM for diagnosis: what's ambiguous, what the correct labels likely are, and what augmentation strategy would help.
+5. Optionally generates synthetic training examples per gap.
+
+Outputs: `gap_report.md`, `gap_report.json`, `synthetic_examples.csv`.
+
+See [docs/gap-analysis.md](docs/gap-analysis.md) for details and configuration.
+
+---
+
+## Probe Model (Local Fine-Tuning)
+
+Train a lightweight RoBERTa classifier locally to get fast feedback on training-data quality before committing to the full cloud training pipeline:
+
+```bash
+# Train on distillation JSONL
+python scripts/train_probe.py \
+    --dataset fed_headlines \
+    --training-data outputs/fed_headlines/distillation.jsonl
+
+# Override hyperparams
+python scripts/train_probe.py \
+    --dataset fed_headlines \
+    --training-data outputs/fed_headlines/distillation.jsonl \
+    --model distilroberta-base --epochs 3 --batch-size 64
+
+# Evaluate a saved model on new data
+python scripts/train_probe.py \
+    --dataset fed_headlines --eval-only \
+    --model-dir outputs/fed_headlines/probe \
+    --training-data outputs/fed_headlines/distillation_v2.jsonl
+```
+
+Requires the optional `probe` dependency group: `pip install 'autolabeler[probe]'`
+
+The probe uses per-sample training weights from the distillation export, so high-quality labels (ACCEPT tier, human-verified) influence the model more than uncertain ones. Metrics come from the same `EvaluationService` used elsewhere, so probe results are directly comparable to cloud model evaluations.
+
+See [docs/probe-model.md](docs/probe-model.md) for the full iteration workflow.
+
+---
+
+## LIT (Language Interpretability Tool)
+
+Visually inspect a distilled or probe model's predictions using Google's LIT:
+
+```bash
+pip install 'autolabeler[lit]'
+
+python scripts/run_lit.py \
+    --config configs/fed_headlines.yaml \
+    --loader my_loader.py \
+    --checkpoint outputs/fed_headlines/probe \
+    --data outputs/fed_headlines/labeled.csv
+```
+
+Opens a browser UI with per-example predictions, attention maps, saliency maps, and embedding projections alongside jury reference labels. See `scripts/run_lit.py --help` for full options.
+
+---
+
 ## Recommended Workflow
 
 The full end-to-end workflow for a new labeling project:
@@ -409,10 +536,14 @@ flowchart TD
     Optimize["4a. Optimize prompts with DSPy"]
     Calibrate["4b. Calibrate jury weights"]
     Relabel["5. Re-label with improvements"]
-    Programs["6. Generate heuristic programs"]
-    Scale["7. Apply programs to full corpus"]
-    Export["8. Export for distillation"]
-    Train["9. Train student model"]
+    Diag["6. Run diagnostics + gap analysis"]
+    Export["7. Export for distillation"]
+    Probe["8. Train probe model"]
+    Satisfied{"Probe metrics OK?"}
+    FixData["Fix data, re-export, retrain probe"]
+    Programs["9. Generate heuristic programs"]
+    Scale["10. Apply programs to full corpus"]
+    Train["11. Full cloud training"]
 
     Start --> Label
     Label --> Review
@@ -423,19 +554,28 @@ flowchart TD
     HasHuman -->|Yes| Calibrate
     Optimize --> Relabel
     Calibrate --> Relabel
-    Relabel --> Programs
+    Relabel --> Diag
+    Diag --> Export
+    Export --> Probe
+    Probe --> Satisfied
+    Satisfied -->|No| FixData
+    FixData --> Export
+    Satisfied -->|Yes| Programs
     Programs --> Scale
-    Scale --> Export
-    Export --> Train
+    Scale --> Train
 
     style Start fill:#6b7280,color:#fff
     style Label fill:#2563eb,color:#fff
     style Optimize fill:#dc2626,color:#fff
     style Calibrate fill:#d97706,color:#fff
+    style Diag fill:#f59e0b,color:#fff
+    style Probe fill:#0891b2,color:#fff
     style Programs fill:#7c3aed,color:#fff
     style Export fill:#059669,color:#fff
-    style Train fill:#0891b2,color:#fff
+    style Train fill:#059669,color:#fff
 ```
+
+See [docs/iteration-workflow.md](docs/iteration-workflow.md) for a detailed walkthrough.
 
 ---
 
@@ -530,17 +670,18 @@ jury_models:
     cost_tier: 2
 ```
 
-Prompts live in `prompts/{dataset_name}/`:
+Prompts live in `prompts/{dataset_name}/`. The `prompts/example/` directory is a fully documented template:
 
 ```
-prompts/my_dataset/
-├── system.md          # Role and domain expertise
-├── rules.md           # Classification decision framework
-├── examples.md        # Calibration examples with reasoning
-├── mistakes.md        # Common errors to avoid
-├── candidate.md       # Disagreement resolution prompt
-├── verify.md          # Cross-verification prompt
-└── program_gen.md     # ALCHEmist program generation prompt
+prompts/example/
+├── system.md          # Role and domain expertise (fill in [DOMAIN], [TEXT_TYPE])
+├── rules.md           # Classification rules with examples (fill in label definitions)
+├── examples.md        # Calibration examples per label (replace with your examples)
+├── mistakes.md        # Common errors to avoid (replace with task-specific mistakes)
+├── hypotheses.yaml    # NLI hypothesis strings per label (for diagnostic scoring)
+├── candidate.md       # Disagreement resolution prompt (generic, usually no changes needed)
+├── verify.md          # Cross-verification prompt (generic, usually no changes needed)
+└── program_gen.md     # ALCHEmist program generation prompt (generic)
 ```
 
 ### Supported Providers
@@ -554,13 +695,48 @@ prompts/my_dataset/
 
 You can mix providers freely within a jury. OpenRouter is the easiest way to get started — one API key gets you access to models from every provider.
 
+For the complete configuration reference (diagnostics, gap analysis, probe model, embedding providers, NLI tuning), see [docs/configuration.md](docs/configuration.md).
+
+---
+
+## Installation
+
+```bash
+# Core (labeling, diagnostics, export)
+pip install -e .
+
+# With probe model support (adds transformers, torch)
+pip install -e '.[probe]'
+
+# With LIT interpretability UI
+pip install -e '.[lit]'
+
+# Everything
+pip install -e '.[all]'
+```
+
+---
+
+## Documentation
+
+| Guide | Contents |
+|-------|----------|
+| [Configuration Reference](docs/configuration.md) | Complete reference for every YAML config block |
+| [Diagnostics Guide](docs/diagnostics.md) | Running post-labeling diagnostics, module details, interpreting outputs |
+| [Gap Analysis Guide](docs/gap-analysis.md) | LLM-powered error clustering, synthetic data generation |
+| [Probe Model Guide](docs/probe-model.md) | Local fine-tuning for fast evaluation, hyperparameter tuning |
+| [Iteration Workflow](docs/iteration-workflow.md) | End-to-end loop: diagnose, fix data, retrain, repeat |
+
 ---
 
 ## Adding a New Dataset
 
-1. Create `configs/my_dataset.yaml` (copy from an existing config)
-2. Create `prompts/my_dataset/` with at least `system.md` and `rules.md`
-3. Run: `python scripts/run_labeling.py --dataset my_dataset --input data.csv --output labeled.csv`
+1. Copy the template config: `cp configs/example.yaml configs/my_dataset.yaml`
+2. Copy the template prompts: `cp -r prompts/example prompts/my_dataset`
+3. Fill in the `[PLACEHOLDER]` fields in each file
+4. Run: `python scripts/run_labeling.py --dataset my_dataset --input data.csv --output labeled.csv`
+
+The example config has every option documented with inline comments. The example prompts are structured templates with placeholders — replace `[LABEL_X]`, `[DOMAIN]`, and `[TEXT_TYPE]` with your task's specifics.
 
 ---
 
@@ -568,39 +744,66 @@ You can mix providers freely within a jury. OpenRouter is the easiest way to get
 
 ```
 autolabeler/
-├── configs/                    # Dataset YAML configs
-│   ├── fed_headlines.yaml
-│   └── tpu.yaml
-├── prompts/                    # Structured prompt files (markdown)
-│   ├── fed_headlines/
-│   └── tpu/
+├── configs/
+│   └── example.yaml                # Fully annotated template — copy to get started
+│   # your configs/*.yaml are gitignored (kept local)
+├── prompts/
+│   └── example/                    # Template prompts with [PLACEHOLDER] fields
+│       ├── system.md, rules.md, examples.md, mistakes.md
+│       ├── candidate.md, verify.md, program_gen.md
+│       └── hypotheses.yaml         # NLI hypothesis template
+│   # your prompts/{dataset}/ directories are gitignored (kept local)
 ├── scripts/
-│   ├── run_labeling.py         # Main labeling entry point
-│   ├── optimize_prompts.py     # DSPy prompt optimization
-│   ├── calibrate_jury.py       # Learn jury weights
-│   ├── generate_programs.py    # ALCHEmist program generation
-│   └── export_for_distillation.py  # Distillation export
+│   ├── run_labeling.py             # Main labeling entry point
+│   ├── run_diagnostics.py          # Post-hoc error detection
+│   ├── train_probe.py              # Local RoBERTa fine-tuning
+│   ├── export_for_distillation.py  # Distillation export
+│   ├── optimize_prompts.py         # DSPy prompt optimization
+│   ├── calibrate_jury.py           # Learn jury weights
+│   ├── generate_programs.py        # ALCHEmist program generation
+│   └── run_lit.py                  # LIT interpretability server
 ├── src/autolabeler/core/
 │   ├── labeling/
-│   │   ├── pipeline.py         # LabelingPipeline (main)
-│   │   ├── cascade.py          # CascadeStrategy
-│   │   ├── verification.py     # CrossVerifier
-│   │   └── program_generation.py  # ProgramGenerator/Labeler
+│   │   ├── pipeline.py             # LabelingPipeline (main)
+│   │   ├── cascade.py              # CascadeStrategy
+│   │   ├── verification.py         # CrossVerifier
+│   │   └── program_generation.py   # ProgramGenerator/Labeler
+│   ├── diagnostics/
+│   │   ├── config.py               # DiagnosticsConfig + GapAnalysisConfig
+│   │   ├── embedding_analyzer.py   # Outliers, centroid violations, fragmentation
+│   │   ├── embedding_providers.py  # Local / OpenAI / OpenRouter embeddings
+│   │   ├── embedding_viz.py        # UMAP HTML visualisation
+│   │   ├── nli_scorer.py           # NLI coherence scoring
+│   │   ├── distribution_diagnostics.py
+│   │   ├── batch_diagnostics.py    # Temporal drift, cascade bias
+│   │   ├── rationale_analyzer.py   # Reasoning consistency
+│   │   ├── suspicion_scorer.py     # Composite per-sample scoring
+│   │   ├── active_discovery.py     # Audit sample selection
+│   │   ├── quality_report.py       # Markdown + JSON reports
+│   │   └── gap_analyzer.py         # LLM error clustering + synthesis
+│   ├── probe/
+│   │   ├── config.py               # ProbeConfig
+│   │   └── trainer.py              # ProbeTrainer (HuggingFace Trainer wrapper)
 │   ├── llm_providers/
-│   │   └── providers.py        # 4 providers: OpenAI, Anthropic, Google, OpenRouter
+│   │   └── providers.py            # OpenAI, Anthropic, Google, OpenRouter
 │   ├── quality/
-│   │   ├── confidence_scorer.py  # Logprobs, self-consistency, verbal
-│   │   ├── calibrator.py       # Isotonic regression calibration
-│   │   └── jury_weighting.py   # Per-model per-class weights
+│   │   ├── confidence_scorer.py    # Logprobs, self-consistency, verbal
+│   │   ├── calibrator.py           # Isotonic regression calibration
+│   │   └── jury_weighting.py       # Per-model per-class weights
+│   ├── evaluation/
+│   │   └── evaluation_service.py   # Accuracy, F1, ordinal metrics, confusion matrix
 │   ├── export/
-│   │   └── distillation_export.py
+│   │   └── distillation_export.py  # JSONL with training weights + soft labels
+│   ├── lit/
+│   │   └── model.py                # LIT model wrappers
 │   ├── optimization/
-│   │   └── dspy_optimizer.py   # DSPy MIPROv2 integration
+│   │   └── dspy_optimizer.py       # DSPy MIPROv2 integration
 │   ├── prompts/
-│   │   └── registry.py         # PromptRegistry
-│   └── dataset_config.py       # DatasetConfig + ModelConfig
-├── datasets/                   # Input data (gitignored)
-├── outputs/                    # Results (gitignored)
+│   │   └── registry.py             # PromptRegistry
+│   └── dataset_config.py           # DatasetConfig + ModelConfig
+├── docs/                           # Project documentation
+├── datasets/                       # Input data (gitignored)
+├── outputs/                        # Results (gitignored)
 └── tests/
 ```
 

@@ -1,0 +1,19 @@
+# NLI hypothesis strings for the labeling task.
+#
+# Each label maps to a natural-language hypothesis that should be entailed
+# by texts correctly assigned to that label. Used by the NLI diagnostic
+# module to flag label-text mismatches without ground truth.
+#
+# Guidelines for writing good hypotheses:
+#   - Write them as declarative statements, not questions.
+#   - Be specific about what the label means semantically.
+#   - Avoid language that overlaps heavily between labels.
+#   - Test by asking: "If this hypothesis is true, should the text have this label?"
+#
+# Replace [LABEL_X] with your actual label values (e.g. "0", "1", "positive").
+# Replace the hypothesis strings with descriptions appropriate to your task.
+
+labels:
+  "[LABEL_A]": "This text clearly expresses [LABEL_A characteristic]. It [specific description of what a LABEL_A text says or implies]."
+  "[LABEL_B]": "This text clearly expresses [LABEL_B characteristic]. It [specific description of what a LABEL_B text says or implies]."
+  "[LABEL_C]": "This text is neutral or ambiguous regarding [the dimension being classified]. It does not clearly indicate [LABEL_A or LABEL_B characteristics]."

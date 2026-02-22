@@ -75,6 +75,15 @@ class BatchDiagnostics:
             >>> result = diag.detect_model_drift(df)
             >>> result["flagged_models"]
         """
+        if jury_labels_col not in df.columns:
+            logger.info(f'Column {jury_labels_col!r} not found -- skipping model drift detection')
+            return {
+                'per_batch_distributions': [],
+                'drift_detected': False,
+                'flagged_models': [],
+                'overall_model_distributions': {},
+            }
+
         if len(df) < n_batches * 2:
             n_batches = max(2, len(df) // 2)
 

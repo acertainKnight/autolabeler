@@ -41,6 +41,15 @@ outputs/
 results/
 
 # ===========================================================================
+# Project-specific configs and prompts -- kept local, not for public repo.
+# Copy configs/example.yaml and prompts/example/ to get started.
+# ===========================================================================
+configs/*.yaml
+!configs/example.yaml
+prompts/*/
+!prompts/example/
+
+# ===========================================================================
 # Archive of old code -- kept locally for reference only
 # ===========================================================================
 _archive/

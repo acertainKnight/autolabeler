@@ -17,6 +17,84 @@ _DEFAULT_SUSPICION_WEIGHTS: dict[str, float] = {
 
 
 @dataclass
+class GapAnalysisConfig:
+    """Configuration for LLM-powered gap analysis.
+
+    Controls error clustering, LLM diagnosis, and synthetic data generation
+    for identifying systematic weaknesses in the training data. Runs as step
+    10 in the diagnostics pipeline and requires embedding results (step 1) to
+    be available for UMAP+HDBSCAN clustering.
+
+    Args:
+        enabled: Master switch for gap analysis. Must be True in the config
+            for the pipeline to run it. Can be overridden per-run via the
+            ``--force-gap-analysis`` CLI flag in run_diagnostics.py.
+        analysis_provider: LLM provider for gap diagnosis. Supported values
+            match the jury providers: "google", "openai", "anthropic",
+            "openrouter". Flash-tier models (gemini-2.5-flash, gpt-4o-mini)
+            are recommended for cost efficiency.
+        analysis_model: Model identifier for the gap analysis LLM.
+        min_cluster_size: Minimum samples to form an error cluster. Lower
+            values produce more granular clusters but risk noise. Must be >= 2.
+        max_clusters: Cap on HDBSCAN clusters returned; smallest clusters
+            beyond this limit are merged into the noise label (-1).
+        representative_samples: Number of texts shown to the LLM per cluster.
+            More context costs more tokens but gives the LLM better signal.
+        generate_synthetic: If True, the LLM generates synthetic training
+            examples for each gap cluster. These are saved to
+            synthetic_examples.csv in the output directory.
+        synthetic_per_cluster: Number of synthetic examples to generate per
+            gap cluster.
+        top_n_suspicious: How many top suspects (by suspicion score) to pull
+            into the error pool before clustering. Larger pools give more
+            coverage but make clustering slower.
+
+    Example:
+        >>> cfg = GapAnalysisConfig(enabled=True, generate_synthetic=False)
+        >>> cfg.min_cluster_size
+        5
+
+        >>> # Minimal config for a quick diagnostic pass
+        >>> cfg = GapAnalysisConfig(enabled=True, max_clusters=10, top_n_suspicious=200)
+    """
+
+    enabled: bool = False
+    analysis_provider: str = 'google'
+    analysis_model: str = 'gemini-2.5-flash'
+    min_cluster_size: int = 5
+    max_clusters: int = 20
+    representative_samples: int = 10
+    generate_synthetic: bool = True
+    synthetic_per_cluster: int = 5
+    top_n_suspicious: int = 500
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'GapAnalysisConfig':
+        """Build a GapAnalysisConfig from a plain dictionary.
+
+        Args:
+            data: Dictionary with gap_analysis configuration keys.
+
+        Returns:
+            GapAnalysisConfig instance.
+
+        Example:
+            >>> cfg = GapAnalysisConfig.from_dict({"enabled": True, "max_clusters": 10})
+        """
+        return cls(
+            enabled=data.get('enabled', False),
+            analysis_provider=data.get('analysis_provider', 'google'),
+            analysis_model=data.get('analysis_model', 'gemini-2.5-flash'),
+            min_cluster_size=data.get('min_cluster_size', 5),
+            max_clusters=data.get('max_clusters', 20),
+            representative_samples=data.get('representative_samples', 10),
+            generate_synthetic=data.get('generate_synthetic', True),
+            synthetic_per_cluster=data.get('synthetic_per_cluster', 5),
+            top_n_suspicious=data.get('top_n_suspicious', 500),
+        )
+
+
+@dataclass
 class DiagnosticsConfig:
     """Configuration for post-labeling diagnostic analysis.
 
@@ -43,8 +121,18 @@ class DiagnosticsConfig:
         lof_neighbors: Number of neighbours for Local Outlier Factor (default 20).
         fragmentation_min_cluster_size: Minimum cluster size for HDBSCAN
             fragmentation analysis (default 5).
+        fragmentation_umap_dim: Dimensionality to UMAP-reduce embeddings to
+            before running HDBSCAN. High-dim embeddings suffer from the curse
+            of dimensionality, making density estimates unreliable and KD-trees
+            slow. 5-10 dims is standard (cf. BERTopic). Default 10.
         nli_entailment_threshold: Entailment score below which a (text, label)
             pair is flagged as potentially mismatched (default 0.5).
+        nli_batch_size: Batch size for CrossEncoder.predict(). Higher values
+            use more GPU memory but are faster. 256 is a good GPU default;
+            use 32-64 on CPU.
+        nli_max_length: Max token length for CrossEncoder tokenizer. Sequences
+            are truncated/padded to this length. Lower values speed up inference
+            on short texts. None uses the model default (512 for DeBERTa).
         duplicate_similarity_threshold: Cosine similarity above which two texts
             are treated as near-duplicates (default 0.95).
         batch_drift_kl_threshold: KL divergence above which a label-distribution
@@ -56,11 +144,23 @@ class DiagnosticsConfig:
         embedding_cache_dir: Directory for caching computed embeddings to disk.
         top_k_suspects: Maximum number of high-suspicion samples to surface
             in the audit recommendations.
+        gap_analysis: Optional sub-config for LLM-powered gap analysis. When
+            present and enabled, the gap analyzer clusters high-suspicion samples
+            by topic, sends each cluster to an LLM for diagnosis, and optionally
+            generates synthetic training examples. See GapAnalysisConfig.
 
     Example:
         >>> cfg = DiagnosticsConfig(enabled=True, run_post_labeling=True)
         >>> cfg.outlier_z_threshold
         2.0
+
+        >>> # With gap analysis enabled
+        >>> cfg = DiagnosticsConfig.from_dict({
+        ...     "enabled": True,
+        ...     "gap_analysis": {"enabled": True, "max_clusters": 15},
+        ... })
+        >>> cfg.gap_analysis.max_clusters
+        15
     """
 
     enabled: bool = False
@@ -77,8 +177,27 @@ class DiagnosticsConfig:
     lof_neighbors: int = 20
     fragmentation_min_cluster_size: int = 5
 
+    # UMAP dimensionality for HDBSCAN clustering (à la BERTopic).
+    # Full embedding dim (e.g. 1536) is too high for density-based clustering.
+    # 5-10 preserves local structure while making HDBSCAN fast and reliable.
+    fragmentation_umap_dim: int = 10
+
     # NLI thresholds
     nli_entailment_threshold: float = 0.5
+
+    # NLI inference batch size for CrossEncoder.predict().
+    # GPU: 256 is a safe default; can go to 512+ with >=8 GB VRAM.
+    # CPU: 32-64 recommended.
+    nli_batch_size: int = 256
+
+    # Max token length for CrossEncoder tokenizer. Shorter = faster for short texts.
+    # None = model default (512 for DeBERTa). Set to 128 for texts under ~40 tokens.
+    nli_max_length: int | None = None
+
+    # Embedding batch size: texts per encode call / API request.
+    # Local: 64 is safe for most hardware; increase if you have a GPU.
+    # OpenAI/OpenRouter: 256-2048 is fine; OpenRouter's limit depends on the upstream model.
+    embedding_batch_size: int = 64
 
     # Duplicate detection
     duplicate_similarity_threshold: float = 0.95
@@ -99,6 +218,9 @@ class DiagnosticsConfig:
 
     # Audit output
     top_k_suspects: int = 100
+
+    # Gap analysis (optional)
+    gap_analysis: 'GapAnalysisConfig | None' = None
 
     @classmethod
     def from_dict(cls, data: dict) -> 'DiagnosticsConfig':
@@ -126,11 +248,20 @@ class DiagnosticsConfig:
             outlier_z_threshold=data.get('outlier_z_threshold', 2.0),
             lof_neighbors=data.get('lof_neighbors', 20),
             fragmentation_min_cluster_size=data.get('fragmentation_min_cluster_size', 5),
+            fragmentation_umap_dim=data.get('fragmentation_umap_dim', 10),
             nli_entailment_threshold=data.get('nli_entailment_threshold', 0.5),
+            nli_batch_size=data.get('nli_batch_size', 256),
+            nli_max_length=data.get('nli_max_length'),
+            embedding_batch_size=data.get('embedding_batch_size', 64),
             duplicate_similarity_threshold=data.get('duplicate_similarity_threshold', 0.95),
             batch_drift_kl_threshold=data.get('batch_drift_kl_threshold', 0.1),
             suspicion_weights=weights,
             hypotheses_path=data.get('hypotheses_path'),
             embedding_cache_dir=data.get('embedding_cache_dir', '.cache/embeddings'),
             top_k_suspects=data.get('top_k_suspects', 100),
+            gap_analysis=(
+                GapAnalysisConfig.from_dict(data['gap_analysis'])
+                if data.get('gap_analysis')
+                else None
+            ),
         )
