@@ -52,12 +52,12 @@ from loguru import logger
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.labeling.pipeline import LabelingPipeline
-from src.autolabeler.core.llm_providers.providers import load_provider_module
-from src.autolabeler.core.prompts.registry import PromptRegistry
-from src.autolabeler.core.quality.confidence_scorer import ConfidenceScorer
-from src.autolabeler.core.utils.data_utils import load_input_data
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.labeling.pipeline import LabelingPipeline
+from src.sibyls.core.llm_providers.providers import load_provider_module
+from src.sibyls.core.prompts.registry import PromptRegistry
+from src.sibyls.core.quality.confidence_scorer import ConfidenceScorer
+from src.sibyls.core.utils.data_utils import load_input_data
 
 
 def setup_logging(verbose: bool = False):

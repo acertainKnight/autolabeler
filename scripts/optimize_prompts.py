@@ -47,12 +47,12 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.optimization.dspy_optimizer import (
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.optimization.dspy_optimizer import (
     DSPyConfig,
     DSPyOptimizer,
 )
-from src.autolabeler.core.prompts.registry import PromptRegistry
+from src.sibyls.core.prompts.registry import PromptRegistry
 
 
 def setup_logging(verbose: bool = False) -> None:

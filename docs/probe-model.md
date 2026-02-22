@@ -149,8 +149,8 @@ On an RTX 3050 (4 GB VRAM), `roberta-base` with `batch_size=32` and `fp16` train
 ## Programmatic Usage
 
 ```python
-from autolabeler.core.probe import ProbeTrainer, ProbeConfig
-from autolabeler.core.dataset_config import DatasetConfig
+from sibyls.core.probe import ProbeTrainer, ProbeConfig
+from sibyls.core.dataset_config import DatasetConfig
 
 ds_cfg = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
 probe_cfg = ProbeConfig(model_name="roberta-base", epochs=3)

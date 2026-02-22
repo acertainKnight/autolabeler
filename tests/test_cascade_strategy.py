@@ -10,8 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig, ModelConfig
-from src.autolabeler.core.labeling.cascade import CascadeStrategy, EscalationResult
+from src.sibyls.core.dataset_config import DatasetConfig, ModelConfig
+from src.sibyls.core.labeling.cascade import CascadeStrategy, EscalationResult
 
 
 def make_config(

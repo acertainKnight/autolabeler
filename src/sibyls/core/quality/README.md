@@ -16,7 +16,7 @@ Calibrates model confidence scores to better reflect true prediction accuracy.
 
 **Example:**
 ```python
-from autolabeler.core.quality import ConfidenceCalibrator
+from sibyls.core.quality import ConfidenceCalibrator
 
 # Initialize calibrator
 calibrator = ConfidenceCalibrator(method="temperature", n_bins=10)
@@ -55,7 +55,7 @@ Monitors annotation quality with inter-annotator agreement and performance track
 
 **Example:**
 ```python
-from autolabeler.core.quality import QualityMonitor
+from sibyls.core.quality import QualityMonitor
 import pandas as pd
 
 # Initialize monitor
@@ -122,7 +122,7 @@ Interactive Streamlit dashboard for real-time quality monitoring.
 pip install -e ".[dashboard]"
 
 # Run dashboard
-streamlit run src/autolabeler/dashboard/quality_dashboard.py
+streamlit run src/sibyls/dashboard/quality_dashboard.py
 ```
 
 **Dashboard Tabs:**
@@ -191,8 +191,8 @@ CQAA = Total Cost / (Annotations × Accuracy^quality_weight)
 ### Evaluating Model Confidence
 
 ```python
-from autolabeler.core.labeling import LabelingService
-from autolabeler.core.quality import ConfidenceCalibrator
+from sibyls.core.labeling import LabelingService
+from sibyls.core.quality import ConfidenceCalibrator
 
 # Label data
 service = LabelingService("sentiment", settings)
@@ -215,8 +215,8 @@ results_df["calibrated_confidence"] = calibrator.calibrate(
 ### Monitoring Ensemble Quality
 
 ```python
-from autolabeler.core.ensemble import EnsembleService
-from autolabeler.core.quality import QualityMonitor
+from sibyls.core.ensemble import EnsembleService
+from sibyls.core.quality import QualityMonitor
 
 # Create ensemble
 ensemble = EnsembleService("sentiment", settings)
@@ -248,7 +248,7 @@ pip install -e ".[dev]"
 pytest tests/test_unit/quality/ -v
 
 # Run with coverage
-pytest tests/test_unit/quality/ --cov=autolabeler.core.quality --cov-report=html
+pytest tests/test_unit/quality/ --cov=sibyls.core.quality --cov-report=html
 ```
 
 ## Best Practices

@@ -38,7 +38,7 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.quality.jury_weighting import JuryWeightLearner
+from src.sibyls.core.quality.jury_weighting import JuryWeightLearner
 
 
 def setup_logging(verbose: bool = False) -> None:

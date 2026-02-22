@@ -16,10 +16,10 @@ Key design decisions:
       are directly comparable to full cloud model evaluations.
 
 Dependencies (optional install group):
-    pip install 'autolabeler[probe]'
+    pip install 'sibyls[probe]'
 
     This pulls in transformers, torch, accelerate, and datasets. These are not
-    required for the rest of the autolabeler pipeline and are kept optional to
+    required for the rest of the sibyls pipeline and are kept optional to
     avoid bloating the default install.
 """
 
@@ -131,8 +131,8 @@ class ProbeTrainer:
         dataset_config: DatasetConfig for label vocabulary and dataset name.
 
     Example:
-        >>> from autolabeler.core.probe import ProbeTrainer, ProbeConfig
-        >>> from autolabeler.core.dataset_config import DatasetConfig
+        >>> from sibyls.core.probe import ProbeTrainer, ProbeConfig
+        >>> from sibyls.core.dataset_config import DatasetConfig
         >>> cfg = ProbeConfig(model_name="roberta-base", epochs=3)
         >>> ds_cfg = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
         >>> trainer = ProbeTrainer(cfg, ds_cfg)
@@ -455,7 +455,7 @@ class ProbeTrainer:
             confusion matrix, and ordinal metrics (if applicable).
         """
         try:
-            from autolabeler.core.evaluation.evaluation_service import EvaluationService
+            from sibyls.core.evaluation.evaluation_service import EvaluationService
 
             eval_df = pd.DataFrame({
                 'true_label': true_labels,
@@ -587,5 +587,5 @@ def _check_transformers_available() -> None:
     except ImportError as exc:
         raise ImportError(
             'transformers is required for the probe model. '
-            "Install with: pip install 'autolabeler[probe]'"
+            "Install with: pip install 'sibyls[probe]'"
         ) from exc

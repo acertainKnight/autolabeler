@@ -1,4 +1,6 @@
-# Autolabeler
+# Sibyls
+
+*Named after the ancient prophetesses who gave independent oracles — like multiple LLM models rendering independent judgments.*
 
 A production-ready LLM-powered data labeling service. Heterogeneous jury voting, cascaded model escalation, confidence calibration, and dataset-agnostic architecture — all grounded in peer-reviewed research from 2024-2026.
 
@@ -496,7 +498,7 @@ python scripts/train_probe.py \
     --training-data outputs/fed_headlines/distillation_v2.jsonl
 ```
 
-Requires the optional `probe` dependency group: `pip install 'autolabeler[probe]'`
+Requires the optional `probe` dependency group: `pip install 'sibyls[probe]'`
 
 The probe uses per-sample training weights from the distillation export, so high-quality labels (ACCEPT tier, human-verified) influence the model more than uncertain ones. Metrics come from the same `EvaluationService` used elsewhere, so probe results are directly comparable to cloud model evaluations.
 
@@ -509,7 +511,7 @@ See [docs/probe-model.md](docs/probe-model.md) for the full iteration workflow.
 Visually inspect a distilled or probe model's predictions using Google's LIT:
 
 ```bash
-pip install 'autolabeler[lit]'
+pip install 'sibyls[lit]'
 
 python scripts/run_lit.py \
     --config configs/fed_headlines.yaml \
@@ -743,7 +745,7 @@ The example config has every option documented with inline comments. The example
 ## Project Structure
 
 ```
-autolabeler/
+sibyls/
 ├── configs/
 │   └── example.yaml                # Fully annotated template — copy to get started
 │   # your configs/*.yaml are gitignored (kept local)
@@ -762,7 +764,7 @@ autolabeler/
 │   ├── calibrate_jury.py           # Learn jury weights
 │   ├── generate_programs.py        # ALCHEmist program generation
 │   └── run_lit.py                  # LIT interpretability server
-├── src/autolabeler/core/
+├── src/sibyls/core/
 │   ├── labeling/
 │   │   ├── pipeline.py             # LabelingPipeline (main)
 │   │   ├── cascade.py              # CascadeStrategy

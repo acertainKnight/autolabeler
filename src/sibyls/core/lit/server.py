@@ -1,13 +1,13 @@
-"""LIT server factory for autolabeler distilled models.
+"""LIT server factory for sibyls distilled models.
 
 Provides a single create_lit_server() entry point that wires together a
 LabeledDataset, a DistilledModelWrapper, and (optionally) a
 JuryReferenceModel into a ready-to-serve LIT Server.
 
 Usage (programmatic):
-    >>> from autolabeler.core.dataset_config import DatasetConfig
-    >>> from autolabeler.core.lit.server import create_lit_server
-    >>> from autolabeler.core.lit.model import DistilledModelWrapper
+    >>> from sibyls.core.dataset_config import DatasetConfig
+    >>> from sibyls.core.lit.server import create_lit_server
+    >>> from sibyls.core.lit.model import DistilledModelWrapper
     >>>
     >>> config = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
     >>> wrapper = DistilledModelWrapper(model, tokenizer, config)
@@ -30,11 +30,11 @@ try:
     from lit_nlp import dev_server
 except ImportError as exc:
     raise ImportError(
-        "lit-nlp is not installed. Install it with: pip install 'autolabeler[lit]'"
+        "lit-nlp is not installed. Install it with: pip install 'sibyls[lit]'"
     ) from exc
 
-from autolabeler.core.lit.dataset import LabeledDataset
-from autolabeler.core.lit.model import DistilledModelWrapper, JuryReferenceModel
+from sibyls.core.lit.dataset import LabeledDataset
+from sibyls.core.lit.model import DistilledModelWrapper, JuryReferenceModel
 
 
 # Columns whose presence in the CSV indicates pre-computed jury predictions
@@ -68,7 +68,7 @@ def create_lit_server(
     warm_start: float = 0.0,
     **server_kwargs: Any,
 ) -> dev_server.Server:
-    """Build and return a LIT Server wired to the autolabeler pipeline output.
+    """Build and return a LIT Server wired to the sibyls pipeline output.
 
     The server is returned but NOT started -- call ``.serve()`` on the returned
     object to open the browser UI, or use the server programmatically without

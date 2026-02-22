@@ -13,7 +13,7 @@ The typical iteration loop:
     6. Repeat until satisfied, then run full cloud training.
 
 Requires the optional probe dependency group:
-    pip install 'autolabeler[probe]'
+    pip install 'sibyls[probe]'
 
 Usage:
     # Basic: train on distillation JSONL (uses probe: block in config YAML)
@@ -66,9 +66,9 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.probe.config import ProbeConfig
-from src.autolabeler.core.probe.trainer import ProbeTrainer
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.probe.config import ProbeConfig
+from src.sibyls.core.probe.trainer import ProbeTrainer
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -305,7 +305,7 @@ def main() -> int:
         )
     except ImportError as exc:
         logger.error(str(exc))
-        logger.error("Install probe dependencies: pip install 'autolabeler[probe]'")
+        logger.error("Install probe dependencies: pip install 'sibyls[probe]'")
         return 1
     except Exception as exc:
         logger.error(f'Training failed: {exc}')

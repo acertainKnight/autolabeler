@@ -4,8 +4,8 @@ This module provides a suite of complementary detectors that run on labeled
 output data to surface potential labeling errors without requiring ground truth.
 
 Quick start:
-    >>> from autolabeler.core.diagnostics import run_diagnostics
-    >>> from autolabeler.core.dataset_config import DatasetConfig
+    >>> from sibyls.core.diagnostics import run_diagnostics
+    >>> from sibyls.core.dataset_config import DatasetConfig
     >>> import pandas as pd
     >>> config = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
     >>> labeled_df = pd.read_csv("outputs/fed_headlines/labeled.csv")

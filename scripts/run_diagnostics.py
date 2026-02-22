@@ -74,8 +74,8 @@ from loguru import logger
 # Add parent to path for direct script execution
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.diagnostics import run_diagnostics
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.diagnostics import run_diagnostics
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -198,7 +198,7 @@ def main() -> int:
 
     # Apply CLI overrides to diagnostics config
     if config.diagnostics is None:
-        from src.autolabeler.core.diagnostics.config import DiagnosticsConfig
+        from src.sibyls.core.diagnostics.config import DiagnosticsConfig
         config.diagnostics = DiagnosticsConfig(enabled=True)
 
     config.diagnostics.enabled = True
@@ -210,7 +210,7 @@ def main() -> int:
         config.diagnostics.hypotheses_path = args.hypotheses
 
     if args.force_gap_analysis:
-        from src.autolabeler.core.diagnostics.config import GapAnalysisConfig
+        from src.sibyls.core.diagnostics.config import GapAnalysisConfig
         if config.diagnostics.gap_analysis is None:
             config.diagnostics.gap_analysis = GapAnalysisConfig(enabled=True)
         else:

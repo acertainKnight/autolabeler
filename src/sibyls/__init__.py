@@ -1,8 +1,9 @@
 """
-AutoLabeler: Unified Data Labeling Automation Service
+Sibyls: Production-Ready LLM-Powered Data Labeling & Diagnostics
 
-A modern data labeling service using evidence-based LLM jury pipelines with
-heterogeneous models, confidence calibration, and structured markdown prompts.
+Multiple independent LLM oracles deliberate via jury voting, cascaded
+escalation, and confidence calibration to produce high-quality labels
+for model distillation.
 """
 
 __version__ = "2.0.0"

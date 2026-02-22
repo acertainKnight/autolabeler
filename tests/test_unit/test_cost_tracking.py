@@ -17,7 +17,7 @@ import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
-from autolabeler.core.utils.budget_tracker import (
+from sibyls.core.utils.budget_tracker import (
     CostTracker,
     BudgetExceededError,
     extract_openrouter_cost,
@@ -492,7 +492,7 @@ class TestOpenRouterClientIntegration:
         This test is skipped by default as it requires a real API key.
         To run: remove skipif decorator and set OPENROUTER_API_KEY env var.
         """
-        from autolabeler.core.llm_providers.openrouter import OpenRouterClient
+        from sibyls.core.llm_providers.openrouter import OpenRouterClient
 
         tracker = CostTracker(budget=1.0)
 

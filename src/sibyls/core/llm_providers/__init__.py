@@ -6,7 +6,7 @@ Unified provider interface for OpenAI, Anthropic, Google, and OpenRouter.
 Custom providers can be integrated by subclassing ``BaseLLMProvider`` and
 registering them with ``register_provider()``:
 
-    from autolabeler.core.llm_providers import BaseLLMProvider, register_provider, LLMResponse
+    from sibyls.core.llm_providers import BaseLLMProvider, register_provider, LLMResponse
 
     class MyCorporateProxy(BaseLLMProvider):
         def __init__(self, model: str):

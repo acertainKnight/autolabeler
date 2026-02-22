@@ -9,7 +9,7 @@ registering them via ``register_provider()``. This allows corporate proxy
 systems or any custom endpoint to integrate without modifying this file.
 
 Example:
-    >>> from autolabeler.core.llm_providers import BaseLLMProvider, register_provider, LLMResponse
+    >>> from sibyls.core.llm_providers import BaseLLMProvider, register_provider, LLMResponse
     >>> class MyCorporateProxy(BaseLLMProvider):
     ...     def __init__(self, model: str, **kwargs):
     ...         self.model = model
@@ -669,7 +669,7 @@ class OpenRouterProvider:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/autolabeler",
+            "HTTP-Referer": "https://github.com/sibyls",
             "X-Title": "AutoLabeler",
         }
 

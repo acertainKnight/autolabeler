@@ -176,8 +176,8 @@ class DSPyOptimizer:
     selections, evaluated against your labeled data.
 
     Example:
-        >>> from autolabeler.core.prompts.registry import PromptRegistry
-        >>> from autolabeler.core.dataset_config import DatasetConfig
+        >>> from sibyls.core.prompts.registry import PromptRegistry
+        >>> from sibyls.core.dataset_config import DatasetConfig
         >>>
         >>> config = DSPyConfig(model_name="openrouter/google/gemini-2.5-flash")
         >>> optimizer = DSPyOptimizer(config)

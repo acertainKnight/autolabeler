@@ -1,6 +1,6 @@
 """Unified labeling pipeline for any dataset.
 
-This is the core of the autolabeler service. One pipeline handles all datasets,
+This is the core of the sibyls service. One pipeline handles all datasets,
 configured by DatasetConfig and PromptRegistry.
 
 Architecture:
@@ -27,15 +27,15 @@ from typing import Any
 import pandas as pd
 from loguru import logger
 
-from autolabeler.core.dataset_config import DatasetConfig, ModelConfig
-from autolabeler.core.llm_providers.providers import (
+from sibyls.core.dataset_config import DatasetConfig, ModelConfig
+from sibyls.core.llm_providers.providers import (
     CostTracker,
     LLMProvider,
     LLMResponse,
     get_provider,
 )
-from autolabeler.core.prompts.registry import PromptRegistry
-from autolabeler.core.quality.confidence_scorer import ConfidenceScorer
+from sibyls.core.prompts.registry import PromptRegistry
+from sibyls.core.quality.confidence_scorer import ConfidenceScorer
 
 
 @dataclass

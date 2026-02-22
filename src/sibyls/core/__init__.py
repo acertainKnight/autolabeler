@@ -1,8 +1,8 @@
 """
-Core components for AutoLabeler unified pipeline.
+Core components for the Sibyls labeling pipeline.
 
-This module provides the foundational services for the new evidence-based
-labeling pipeline with heterogeneous jury voting and confidence calibration.
+This module provides the foundational services for evidence-based
+labeling with heterogeneous jury voting and confidence calibration.
 """
 
 # Dataset configuration

@@ -22,8 +22,8 @@ Usage:
 
     Can also be invoked standalone:
 
-    >>> from autolabeler.core.diagnostics.gap_analyzer import GapAnalyzer
-    >>> from autolabeler.core.diagnostics.config import DiagnosticsConfig
+    >>> from sibyls.core.diagnostics.gap_analyzer import GapAnalyzer
+    >>> from sibyls.core.diagnostics.config import DiagnosticsConfig
     >>> config = DiagnosticsConfig.from_dict({
     ...     "gap_analysis": {"enabled": True, "generate_synthetic": True},
     ... })
@@ -418,7 +418,7 @@ Return only valid JSON with keys: topic, ambiguity, likely_correct_labels, augme
 If generating synthetic examples, use key "synthetic_examples" as a list of objects with "text" and "label"."""
 
         try:
-            from autolabeler.core.llm_providers.providers import LLMResponse
+            from sibyls.core.llm_providers.providers import LLMResponse
             response: LLMResponse = await provider.call(
                 system=system_prompt,
                 user=user_prompt,
@@ -480,7 +480,7 @@ If generating synthetic examples, use key "synthetic_examples" as a list of obje
             'Conditional rate hike projections'
         """
         try:
-            from autolabeler.core.llm_providers.providers import get_provider
+            from sibyls.core.llm_providers.providers import get_provider
         except ImportError as exc:
             logger.error(f'GapAnalyzer: cannot import LLM providers: {exc}')
             return summaries

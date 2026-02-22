@@ -8,9 +8,9 @@ from unittest.mock import Mock
 from typing import Any
 import tempfile
 
-# Try to import autolabeler components - they may not exist yet
+# Try to import sibyls components - they may not exist yet
 try:
-    from autolabeler.config import Settings
+    from sibyls.config import Settings
 except ImportError:
     Settings = None
 

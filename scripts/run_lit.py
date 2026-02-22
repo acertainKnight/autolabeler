@@ -132,7 +132,7 @@ def parse_args() -> argparse.Namespace:
         Parsed argparse Namespace.
     """
     parser = argparse.ArgumentParser(
-        description='Launch LIT for a distilled autolabeler model',
+        description='Launch LIT for a distilled sibyls model',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -240,7 +240,7 @@ def main() -> int:
     # 1. Load DatasetConfig
     # ------------------------------------------------------------------ #
     sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-    from autolabeler.core.dataset_config import DatasetConfig
+    from sibyls.core.dataset_config import DatasetConfig
 
     logger.info(f'Loading DatasetConfig from {args.config}')
     config = DatasetConfig.from_yaml(args.config)
@@ -265,7 +265,7 @@ def main() -> int:
     # ------------------------------------------------------------------ #
     # 4. Build DistilledModelWrapper
     # ------------------------------------------------------------------ #
-    from autolabeler.core.lit.model import DistilledModelWrapper
+    from sibyls.core.lit.model import DistilledModelWrapper
 
     wrapper = DistilledModelWrapper(
         model=model,
@@ -280,7 +280,7 @@ def main() -> int:
     # ------------------------------------------------------------------ #
     # 5. Build and serve LIT server
     # ------------------------------------------------------------------ #
-    from autolabeler.core.lit.server import create_lit_server
+    from sibyls.core.lit.server import create_lit_server
 
     server = create_lit_server(
         config=config,

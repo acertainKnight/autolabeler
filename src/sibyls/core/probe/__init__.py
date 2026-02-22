@@ -12,8 +12,8 @@ The intended workflow:
     5. Once probe metrics stabilise, run the full cloud training pipeline.
 
 Quick start (programmatic):
-    >>> from autolabeler.core.probe import ProbeTrainer, ProbeConfig
-    >>> from autolabeler.core.dataset_config import DatasetConfig
+    >>> from sibyls.core.probe import ProbeTrainer, ProbeConfig
+    >>> from sibyls.core.dataset_config import DatasetConfig
     >>> ds_cfg = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
     >>> probe_cfg = ProbeConfig(model_name="roberta-base", epochs=3)
     >>> trainer = ProbeTrainer(probe_cfg, ds_cfg)

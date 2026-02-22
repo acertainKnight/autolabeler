@@ -1,4 +1,4 @@
-"""LIT Dataset wrapper for autolabeler pipeline outputs.
+"""LIT Dataset wrapper for sibyls pipeline outputs.
 
 Wraps any labeled CSV produced by LabelingPipeline.label_dataframe() into a
 LIT-compatible Dataset. The spec is built dynamically from the DatasetConfig
@@ -26,7 +26,7 @@ try:
     from lit_nlp.api import types as lit_types
 except ImportError as exc:
     raise ImportError(
-        "lit-nlp is not installed. Install it with: pip install 'autolabeler[lit]'"
+        "lit-nlp is not installed. Install it with: pip install 'sibyls[lit]'"
     ) from exc
 
 
@@ -45,7 +45,7 @@ _MAX_CATEGORY_VALUES: int = 200
 
 
 class LabeledDataset(lit_dataset.Dataset):
-    """LIT Dataset built from an autolabeler pipeline output CSV.
+    """LIT Dataset built from an sibyls pipeline output CSV.
 
     Automatically maps all columns to appropriate LIT types, so every metadata
     column (tier, agreement, speaker, time period, etc.) becomes a sliceable
@@ -57,8 +57,8 @@ class LabeledDataset(lit_dataset.Dataset):
         max_rows: Optional row limit for large datasets. Defaults to all rows.
 
     Example:
-        >>> from autolabeler.core.dataset_config import DatasetConfig
-        >>> from autolabeler.core.lit.dataset import LabeledDataset
+        >>> from sibyls.core.dataset_config import DatasetConfig
+        >>> from sibyls.core.lit.dataset import LabeledDataset
         >>> config = DatasetConfig.from_yaml("configs/fed_headlines.yaml")
         >>> ds = LabeledDataset("outputs/fed_headlines/labeled.csv", config)
         >>> print(len(ds))

@@ -86,7 +86,7 @@ pytest tests/test_validation/ -m validation
 
 ### Run with coverage
 ```bash
-pytest tests/ --cov=src/autolabeler --cov-report=html --cov-report=term-missing
+pytest tests/ --cov=src/sibyls --cov-report=html --cov-report=term-missing
 ```
 
 ### Run performance benchmarks

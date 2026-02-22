@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from autolabeler.core.quality import QualityMonitor
+from sibyls.core.quality import QualityMonitor
 
 
 class TestQualityMonitor:

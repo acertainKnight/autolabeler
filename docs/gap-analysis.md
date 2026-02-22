@@ -154,8 +154,8 @@ The generated synthetic examples are a starting point, not production-ready labe
 ## Programmatic Usage
 
 ```python
-from autolabeler.core.diagnostics.gap_analyzer import GapAnalyzer
-from autolabeler.core.diagnostics.config import DiagnosticsConfig
+from sibyls.core.diagnostics.gap_analyzer import GapAnalyzer
+from sibyls.core.diagnostics.config import DiagnosticsConfig
 from pathlib import Path
 
 config = DiagnosticsConfig.from_dict({

@@ -3,8 +3,8 @@ requires = ["setuptools >= 60.0.0", "wheel", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autolabeler"
-description = "Unified data labeling automation service with LLM-powered jury pipelines"
+name = "sibyls"
+description = "Production-ready LLM-powered data labeling, quality diagnostics, and distillation export"
 readme = "README.md"
 requires-python = ">=3.10, <3.13"
 version = '0.0.0'
@@ -47,7 +47,7 @@ dependencies = [
 ]
 
 [project.scripts]
-autolabeler = "autolabeler.cli:cli"
+sibyls = "sibyls.cli:cli"
 
 [project.optional-dependencies]
 dev = [
@@ -185,7 +185,7 @@ markers = [
 ]
 # Coverage settings
 [tool.coverage.run]
-source = ["src/autolabeler"]
+source = ["src/sibyls"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

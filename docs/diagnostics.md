@@ -168,8 +168,8 @@ When the embedding module runs, an interactive HTML scatter plot is generated sh
 ## Programmatic Usage
 
 ```python
-from autolabeler.core.diagnostics import run_diagnostics
-from autolabeler.core.dataset_config import DatasetConfig
+from sibyls.core.diagnostics import run_diagnostics
+from sibyls.core.dataset_config import DatasetConfig
 import pandas as pd
 from pathlib import Path
 

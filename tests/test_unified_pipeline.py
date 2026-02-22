@@ -17,16 +17,16 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.labeling.pipeline import LabelingPipeline
-from src.autolabeler.core.prompts.registry import PromptRegistry
-from src.autolabeler.core.quality.confidence_scorer import ConfidenceScorer
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.labeling.pipeline import LabelingPipeline
+from src.sibyls.core.prompts.registry import PromptRegistry
+from src.sibyls.core.quality.confidence_scorer import ConfidenceScorer
 
 
 @pytest.fixture
 def mock_config():
     """Create a minimal test config."""
-    from src.autolabeler.core.dataset_config import ModelConfig
+    from src.sibyls.core.dataset_config import ModelConfig
     
     config = DatasetConfig(
         name="test_dataset",
@@ -120,7 +120,7 @@ async def test_pipeline_integration_mock(mock_config, mock_prompts):
     pipeline = LabelingPipeline(mock_config, mock_prompts, scorer)
     
     # Mock the jury providers to return fake responses
-    from src.autolabeler.core.llm_providers.providers import LLMResponse
+    from src.sibyls.core.llm_providers.providers import LLMResponse
     
     mock_response_1 = LLMResponse(
         text='{"label": 1, "reasoning": "Test reason", "confidence": "high"}',

@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-from autolabeler.core.diagnostics.config import DiagnosticsConfig
+from sibyls.core.diagnostics.config import DiagnosticsConfig
 
 
 @dataclass

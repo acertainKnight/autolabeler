@@ -38,7 +38,7 @@ try:
     from lit_nlp.api import types as lit_types
 except ImportError as exc:
     raise ImportError(
-        "lit-nlp is not installed. Install it with: pip install 'autolabeler[lit]'"
+        "lit-nlp is not installed. Install it with: pip install 'sibyls[lit]'"
     ) from exc
 
 

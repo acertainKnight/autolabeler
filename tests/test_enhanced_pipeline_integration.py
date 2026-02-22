@@ -24,8 +24,8 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.labeling.pipeline import LabelingPipeline
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.labeling.pipeline import LabelingPipeline
 
 
 async def test_dataset(
@@ -70,7 +70,7 @@ async def test_dataset(
                     break
         
         # Initialize prompts
-        from src.autolabeler.core.prompts.registry import PromptRegistry
+        from src.sibyls.core.prompts.registry import PromptRegistry
         prompts = PromptRegistry(config.name)
         logger.info("Prompts initialized")
         

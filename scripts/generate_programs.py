@@ -37,10 +37,10 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.autolabeler.core.dataset_config import DatasetConfig
-from src.autolabeler.core.llm_providers.providers import get_provider
-from src.autolabeler.core.prompts.prompt_registry import PromptRegistry
-from src.autolabeler.core.labeling.program_generation import (
+from src.sibyls.core.dataset_config import DatasetConfig
+from src.sibyls.core.llm_providers.providers import get_provider
+from src.sibyls.core.prompts.prompt_registry import PromptRegistry
+from src.sibyls.core.labeling.program_generation import (
     ProgramGenerator,
     ProgramLabeler,
 )

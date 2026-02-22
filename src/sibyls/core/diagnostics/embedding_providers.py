@@ -9,8 +9,8 @@ All providers return L2-normalized vectors suitable for cosine-distance analysis
 Disk caching is handled by the caller (EmbeddingAnalyzer), not the providers.
 
 Example:
-    >>> from autolabeler.core.diagnostics.embedding_providers import get_embedding_provider
-    >>> from autolabeler.core.diagnostics.config import DiagnosticsConfig
+    >>> from sibyls.core.diagnostics.embedding_providers import get_embedding_provider
+    >>> from sibyls.core.diagnostics.config import DiagnosticsConfig
     >>> config = DiagnosticsConfig(embedding_provider="openai", embedding_model="text-embedding-3-small")
     >>> provider = get_embedding_provider(config)
     >>> vectors = provider.embed(["Fed raises rates", "Dovish pivot"])
@@ -251,7 +251,7 @@ class OpenRouterEmbeddingProvider(BaseEmbeddingProvider):
         headers = {
             'Authorization': f'Bearer {self._api_key}',
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://github.com/autolabeler',
+            'HTTP-Referer': 'https://github.com/sibyls',
             'X-Title': 'AutoLabeler',
         }
 
@@ -310,7 +310,7 @@ def get_embedding_provider(config: 'DiagnosticsConfig') -> BaseEmbeddingProvider
         ValueError: If the provider name is not recognized.
 
     Example:
-        >>> from autolabeler.core.diagnostics.config import DiagnosticsConfig
+        >>> from sibyls.core.diagnostics.config import DiagnosticsConfig
         >>> config = DiagnosticsConfig(embedding_provider="openai", embedding_model="text-embedding-3-small")
         >>> provider = get_embedding_provider(config)
         >>> type(provider).__name__
